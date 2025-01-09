@@ -7,6 +7,13 @@ const axios = require("axios");
 const he = require("he");
 const { aianalyzer } = require('./aianalyzer');
 const { puplocalstorage } = require('./puplocalstorage');
+const multer = require("multer");
+const xlsx = require("xlsx");
+const fs = require("fs");
+const path = require("path");
+
+// Configure Multer for file uploads
+const upload = multer({ dest: "uploads/" });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -85,24 +92,57 @@ async function DirHandler(element, keyString) {
   return { type: "directory", name: element.name, contents: filteredChildren };
 }
 
-app.post("/get-keystring", async (req, res) => {
+app.post("/get-analysis", upload.single("file"), async (req, res) => {
   try {
-    var asd = await puplocalstorage();
-    console.log(asd);
+    if (!req.file) {
+      return res.status(400).send({ error: "No file uploaded." });
+    }
+
+    // Read and parse the Excel file
+    const filePath = req.file.path;
+    const workbook = xlsx.readFile(filePath);
+    const sheetName = workbook.SheetNames[0];
+    const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+
+    // Process each row in the sheet
+    const testIds = sheetData.map((row) => {
+      return {
+        testId: row["Test ID"],
+        url: row["URL"], // Assuming "URL" is a column name in the Excel sheet
+      };
+    });
+
+    console.log(testIds);
+    fs.unlinkSync(filePath);
+    
+
+
+    var asd;
+    if(!req.body.token){
+      asd = await puplocalstorage();
+      console.log(asd);
+    } else {
+      asd = req.body.token 
+    }
     
     // Example token; replace it with the actual authorization token
     const authToken = asd;
     // const authToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2Vyc19kb21haW5faWQiOjQzMTY0NzUsInVzZXJfaWQiOiJiZDNjMmY0ZC1iNTNkLTRkZTYtODJjOS0wMDQxM2I3MDc1NmMiLCJzY2hvb2xfaWQiOiJmZTY1MDJmMC1kZmU1LTRlYzMtYjE4MS0zZThlMzRiMTk4OTQiLCJlbWFpbCI6ImRpdmFrYXIuc0BpYW1uZW8uYWkiLCJlbWFpbF92ZXJpZmllZCI6MSwibmFtZSI6IkRpdmFrYXIkUyIsInBob25lIjoiOTg5NDE1NzYxOSIsInBob25lX3ZlcmlmaWVkIjowLCJwcm9maWxlX3BpYyI6bnVsbCwiZ2VuZGVyIjoiTWFsZSIsInJvbGxfbm8iOm51bGwsInBvcnRhbF9hY2Nlc3Nfc3RhdHVzIjpudWxsLCJlbWFpbF9yZXF1ZXN0ZWRfaGlzdG9yeSI6bnVsbCwiZW1haWxfcmVxdWVzdGVkIjpudWxsLCJwcmltYXJ5X2VtYWlsIjoiZGl2YWthci5zQGlhbW5lby5haSIsInBhcmVudF9jb250YWN0IjpudWxsLCJwaG9uZV9udW1iZXIiOnsiY29kZSI6Iis5MSIsIm51bWJlciI6OTg5NDE1NzYxOX0sImlzX2ZvbGxvd2luZ19wdWJsaWNfZmVlZCI6ZmFsc2UsImJhZGdlIjowLCJzdXBlcmJhZGdlIjowLCJjb25zdW1lZF9iYWRnZSI6MCwiY29uc3VtZWRfc3VwZXJiYWRnZSI6MCwibWFubnVhbGJhZGdlcyI6bnVsbCwic3RhdHVzIjoiSW52aXRlZCIsImRvYiI6bnVsbCwic3RhZmZfdHlwZSI6IkludGVybmFsIiwidmVyaWZpZWRfcGljIjpudWxsLCJhcHBsaWNhdGlvbl9ubyI6bnVsbCwiaGFzaF9pZCI6IjczOWM0Y2ZmNTc0OWQ2YTIzYzIzMTU2N2FmMmY3ODliZjM1ZmE5MTEiLCJyZXNldF9wYXNzd29yZCI6ZmFsc2UsImNyZWF0ZWRBdCI6IjIwMjMtMDctMjBUMTg6MTQ6NDIuMDAwWiIsInVwZGF0ZWRBdCI6IjIwMjQtMTItMTlUMTM6MTA6MzAuMDAwWiIsImRlbGV0ZWRBdCI6bnVsbCwicmVkaXNSb2xlIjoiU3RhZmYiLCJzZXNzaW9uSUQiOiJkdFo2S3BSSUhTRnZDcEVOVElQY2FnPT0iLCJlbmFibGVUd29GYWN0b3JBdXRoZW50aWNhdGlvbiI6ZmFsc2UsImlhdCI6MTczNjQwNjIxNywiZXhwIjoxNzM2NDQ5NDE3fQ.6_xyqPX54Cxqm_jNeiFoLp7Yh-0RIixvca0lio1KlJ4";
 
     // Extract request body to forward
-    const requestBody = req.body.id;
-    console.log("Request Body:", {"id": requestBody});
+    // const requestBody = req.body.id;
+    const responsesToExcel = [];
+    const responseinJson = [];
+    for (const test of testIds) {
+    const params = new URLSearchParams(new URL(test.testId).search);
+    const testId = params.get("testId");
+    console.log("Request Body:", {"id": testId});
     
 
     // Make the POST request to the external API
     const response = await axios.post(
       "https://api.examly.io/api/v2/test/student/resultanalysis",
-      {"id": requestBody},
+      {"id": testId},
       {
         headers: {
           "Cache-Control": "no-cache",
@@ -170,18 +210,63 @@ app.post("/get-keystring", async (req, res) => {
     console.error("AI Analyzer Error:", error);
     ai = { content: "AI analysis could not be generated due to an error." };
   }
-  // https://s3.amazonaws.com/exams-media-content/project_starters/fe6502f0-dfe5-4ec3-b181-3e8e34b19894/79d767bd-dca8-4580-b475-98f07d749548/medicinescaff.zip
   const responsePayload = {
     key,
+    token: authToken,
     tcList: JSON.stringify(tcList, null, 2),
     QuestionData,
     codeComponents: codeData,
-    aiAnalysis: ai.content,
+    aiAnalysis: ai.content || ai,
   };
-  
-    // res.status(response.status).send(response.data);
-    // res.status(response.status).send(response.data.frozen_test_data[0].questions[0].student_questions.answer);
-    res.status(response.status).send(responsePayload);
+  const rawName = response.data.users_domain.name;
+  const formattedName = rawName.replace(/\$/g, " ");
+  var testid1 = ''
+  if(ai == "No solution is fetched"){
+    testid1 = test.testId
+  }
+  responsesToExcel.push({
+    Name: formattedName,
+    Email: response.data.users_domain.email,
+    Secured_Mark: response.data.t_marks,
+    Total_Mark: response.data.t_total_marks,
+    // token: authToken,
+    // tcList: JSON.stringify(tcList, null, 2),
+    // QuestionData,
+    // codeComponents: codeData,
+    aiAnalysis: ai.content || ai,
+    ResultLink: testid1,
+
+  });
+  responseinJson.push({
+    key,
+    Name: formattedName,
+    // token: authToken,
+    tcList: JSON.stringify(tcList, null, 2),
+    QuestionData,
+    codeComponents: codeData,
+    aiAnalysis: ai.content || ai,
+  });
+}
+    // res.status(200).send(responsesToExcel);
+    const worksheet = xlsx.utils.json_to_sheet(responsesToExcel);
+
+    // Create a new workbook and append the worksheet
+    const workbook1 = xlsx.utils.book_new();
+    xlsx.utils.book_append_sheet(workbook1, worksheet, "Analysis");
+
+    // Save the Excel file
+    const filePath1 = "./response-analysis.xlsx";
+    xlsx.writeFile(workbook1, filePath1);
+
+    console.log(`Excel file saved to ${filePath1}`);
+
+    // Send response with the Excel file download link
+    res.status(200).send({
+
+      message: "Analysis completed and Excel file generated.",
+      downloadLink: filePath1,
+      responseinJson
+    });
   } catch (error) {
     // Handle errors
     if (error.response) {

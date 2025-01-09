@@ -9,13 +9,17 @@ exports.aianalyzer = async (data) => {
     // let prompt = data.codeComponents;
     let prompt = data.codeComponents.map(obj => JSON.stringify(obj, null, 2)).join('\n'); // Join objects as JSON with line breaks
 
-
     let systemPrompt = data.QuestionData + data.tcList;
-    prompt += '\nAnalyze the provided solution file line by line based on the given description, and give failure analysis in pointr wise where code went wrong based on description in 3 to 4 sentences.'
-    console.log(prompt);
+    prompt += '\nAnalyze the provided solution file line by line based on the given description, and give failure analysis where code went wrong based on description in 3 to 4 sentences. & provide final analysis in 3 sentences'
+    // console.log(prompt);
     
     try {
+        // console.log(data.codeComponents);
+        
         // console.log("try block");
+        if(data.codeComponents == [] || data.codeComponents == ""){
+            return "No solution is fetched"
+        }
         
         // Call OpenAI GPT-3 or GPT-4 API with the generated prompt
         const response = await grop.chat.completions.create({
