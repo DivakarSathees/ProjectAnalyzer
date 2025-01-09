@@ -10,8 +10,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "adm-zip": "^0.5.16",
     "axios": "^1.7.9",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
     "express": "^4.21.2",
-    "he": "^1.2.0"
+    "groq-sdk": "^0.7.0",
+    "he": "^1.2.0",
+    "openai": "^4.68.1",
+    "puppeteer": "^23.11.1"
   }
 }
