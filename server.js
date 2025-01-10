@@ -9,11 +9,15 @@ const multer = require("multer");
 const xlsx = require("xlsx");
 const fs = require("fs");
 const path = require("path");
+const cors = require('cors');
+
 
 // Configure Multer for file uploads
 const upload = multer({ dest: "uploads/" });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(cors({ origin: ['https://forntend-weightagesplit-1.onrender.com','http://localhost:4200'] }));
+
 
 let keyString;
 
@@ -68,7 +72,8 @@ async function ISTtimeconverter(dateTime) {
   const amPm = hour24 >= 12 ? "PM" : "AM";
   const dateSubmitted = yr+"-"+month+"-"+date+" | "+hour12+":"+min+":"+sec+" "+amPm;
   console.log("DateTime (12-hour format):",dateSubmitted);
-  return dateSubmitted;
+  // return dateSubmitted;
+  return {yr, month, date, hour12, min, sec, amPm, dateSubmitted, istDate};
 }
 
 async function DirHandler(element, keyString) {
@@ -186,7 +191,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     const responseString = response.data.frozen_test_data[0].questions[0].student_questions.answer;
     const testSubmitedTimeUTC = response.data.frozen_test_data[0].questions[0].student_questions.updatedAt;
     const testSubmitedTimeIST = await ISTtimeconverter(testSubmitedTimeUTC);
-    console.log(testSubmitedTimeIST);
+
     
     const extractKey = (responseString) => {
       try {
@@ -226,6 +231,27 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     QuestionData,
     codeComponents: codeData,
   }
+  let sonarAddedDateIST;
+  const sonarAddedDate = await axios.get(
+    `https://sonarcloud.io/api/project_branches/list?project=iamneo-production_${key}`);
+  const sonardate = sonarAddedDate?.data?.branches[0]?.commit?.date || "null date";
+  if(sonardate != "null date"){
+    sonarAddedDateIST = await ISTtimeconverter(sonardate);
+  } else {
+    sonarAddedDateIST = "Not recorded"
+  }
+  var testid1 = ''
+  const differenceInMs = testSubmitedTimeIST.istDate - sonarAddedDateIST.istDate; // Time difference in milliseconds
+  const differenceInMinutes = Math.abs(differenceInMs / (1000 * 60)); // Convert ms to minutes
+  let differenceInTimeSubmission;
+  if (differenceInMinutes <= 5) {
+    // differenceInTimeSubmission = "The difference is within 5 minutes.";
+  } else {
+    testid1 = test.testId
+    // console.log("The difference is more than 5 minutes.");
+    differenceInTimeSubmission = `The difference is more than 5 minutes or not recorded on submission of test. Check manually for Latest Code`;
+  }
+    
 
 
 
@@ -246,7 +272,6 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
   };
   const rawName = response.data.users_domain.name;
   const formattedName = rawName.replace(/\$/g, " ");
-  var testid1 = ''
   if(ai == "No solution is fetched"){
     testid1 = test.testId
   }
@@ -255,7 +280,9 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     Email: response.data.users_domain.email,
     Secured_Mark: response.data.t_marks,
     Total_Mark: response.data.t_total_marks,
-    Test_Submitted_Time: testSubmitedTimeIST,
+    Test_Submitted_Time: testSubmitedTimeIST.dateSubmitted,
+    SonarAddedTime: sonarAddedDateIST.dateSubmitted,
+    Differnce_In_Submission: differenceInTimeSubmission,
     // token: authToken,
     // tcList: JSON.stringify(tcList, null, 2),
     // QuestionData,
@@ -266,7 +293,8 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
   });
   responseinJson.push({
     key,
-    Name: formattedName,
+    test_Id: testid1,
+    name: formattedName,
     // token: authToken,
     tcList: JSON.stringify(tcList, null, 2),
     QuestionData,

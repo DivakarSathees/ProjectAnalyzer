@@ -9,7 +9,9 @@ exports.aianalyzer = async (data) => {
     // let prompt = data.codeComponents;
     let prompt = data.codeComponents.map(obj => JSON.stringify(obj, null, 2)).join('\n'); // Join objects as JSON with line breaks
 
-    let systemPrompt = data.QuestionData + data.tcList;
+    // let systemPrompt = data.QuestionData + data.tcList;
+    let systemPrompt = data.QuestionData;
+    let tcList = data.tcList;
     prompt += '\nAnalyze the provided solution file line by line based on the given description, and give failure analysis where code went wrong based on description in 3 to 4 sentences. & provide final analysis in 3 sentences'
     // console.log(prompt);
     
@@ -28,6 +30,7 @@ exports.aianalyzer = async (data) => {
             messages: [
                         { role: "system", content: "You are Code analyzer, need to check line by line of the provided solution based on description for any syntax wise error, logical implementation error, funtionality wise error, runntime error, compile time error." },
                         { role: "system", content: systemPrompt },
+                        { role: "system", content: tcList },
                         {
                             role: "user",
                             content: prompt,
