@@ -45,6 +45,4 @@ exports.aianalyzer = async (data) => {
     } catch (error) {
         throw new Error('Error with GPT model text generation');
     }
-
-
 }

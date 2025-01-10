@@ -1,5 +1,3 @@
-
-
 const express = require('express');
 const app = express();
 const port = 8081;
@@ -16,7 +14,6 @@ const path = require("path");
 const upload = multer({ dest: "uploads/" });
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 
 let keyString;
 
@@ -47,6 +44,31 @@ console.log(url);
     .join("\n");
 
   return { type: "file", name: element.name, code: codeLines };
+}
+
+async function ISTtimeconverter(dateTime) {
+  const utcDate = new Date(dateTime);
+  const istDate = new Date(utcDate.toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const formattedDate = istDate.toISOString().slice(0, 19).replace("T", " ");
+
+  let hour24 = istDate.getHours();
+  let min = istDate.getMinutes();
+  let sec = istDate.getSeconds();
+  const yr = istDate.getFullYear();
+  let month = istDate.getMonth() + 1;
+  let date = istDate.getDate();
+  month = month < 10 ? `0${month}` : month;
+  date = date < 10 ? `0${date}` : date;
+  sec = sec < 10 ? `0${sec}` : sec;
+  min = min < 10 ? `0${min}` : min;
+
+  let hour12 = hour24 % 12 || 12;
+  hour12 = hour12 < 10 ? `0${hour12}` : hour12;
+
+  const amPm = hour24 >= 12 ? "PM" : "AM";
+  const dateSubmitted = yr+"-"+month+"-"+date+" | "+hour12+":"+min+":"+sec+" "+amPm;
+  console.log("DateTime (12-hour format):",dateSubmitted);
+  return dateSubmitted;
 }
 
 async function DirHandler(element, keyString) {
@@ -162,6 +184,10 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     // console.log(response.data.frozen_test_data[0].questions[0].project_questions.boilerPlate.url);
     // console.log(response.data.frozen_test_data[0].questions[0].student_questions.answer);
     const responseString = response.data.frozen_test_data[0].questions[0].student_questions.answer;
+    const testSubmitedTimeUTC = response.data.frozen_test_data[0].questions[0].student_questions.updatedAt;
+    const testSubmitedTimeIST = await ISTtimeconverter(testSubmitedTimeUTC);
+    console.log(testSubmitedTimeIST);
+    
     const extractKey = (responseString) => {
       try {
           const jsonObject = JSON.parse(responseString);
@@ -229,6 +255,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     Email: response.data.users_domain.email,
     Secured_Mark: response.data.t_marks,
     Total_Mark: response.data.t_total_marks,
+    Test_Submitted_Time: testSubmitedTimeIST,
     // token: authToken,
     // tcList: JSON.stringify(tcList, null, 2),
     // QuestionData,
