@@ -10,7 +10,22 @@ const xlsx = require("xlsx");
 const fs = require("fs");
 const path = require("path");
 const cors = require('cors');
+const mongoose = require('mongoose');
+const { GridFSBucket, ObjectId } = require('mongodb');
+require('dotenv').config();
 
+
+const uri = process.env.MONGO_URI;
+
+mongoose.connect(uri, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+});
+
+let conn = mongoose.connection;
+conn.once('open', () => {
+  console.log('MongoDB connection established.');
+});
 
 // Configure Multer for file uploads
 const upload = multer({ dest: "uploads/" });
@@ -22,7 +37,7 @@ app.use(cors({ origin: ['https://forntend-weightagesplit-1.onrender.com','http:/
 let keyString;
 
 async function CodeSplitter(element, keyString) {
-  if (element.name.includes("appsettings") || element.name.includes("UnitTest") || element.name.includes("WeatherForecast")) {
+  if (element.name.includes("appsettings") || element.name.includes("UnitTest") || element.name.includes("WeatherForecast") || element.name.includes("csproj") || element.name.includes("sln")) {
     console.log(`Skipping directory: ${element.name}`);
     return null;
   }
@@ -77,7 +92,11 @@ async function ISTtimeconverter(dateTime) {
 }
 
 async function DirHandler(element, keyString) {
-  if (element.name === "Migrations" || element.name === "Properties" || element.name === "TestProject") {
+  if (element.name.toLowerCase() === "migrations".toLowerCase() ||
+  element.name.toLowerCase() === "properties".toLowerCase() ||
+  element.name.toLowerCase() === "testproject".toLowerCase() ||
+    element.name.toLowerCase() === "views".toLowerCase() ||
+    element.name.toLowerCase() === "wwwroot".toLowerCase()) {
     console.log(`Skipping directory: ${element.name}`);
     return null;
   }
@@ -245,7 +264,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
   const differenceInMinutes = Math.abs(differenceInMs / (1000 * 60)); // Convert ms to minutes
   let differenceInTimeSubmission;
   if (differenceInMinutes <= 5) {
-    // differenceInTimeSubmission = "The difference is within 5 minutes.";
+    differenceInTimeSubmission = `${differenceInMinutes} mins`;
   } else {
     testid1 = test.testId
     // console.log("The difference is more than 5 minutes.");
@@ -300,28 +319,106 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     QuestionData,
     codeComponents: codeData,
     aiAnalysis: ai.content || ai,
+    Test_Submitted_Time: testSubmitedTimeIST.dateSubmitted,
+    SonarAddedTime: sonarAddedDateIST.dateSubmitted,
+    Differnce_In_Submission: differenceInTimeSubmission,
   });
 }
-    // res.status(200).send(responsesToExcel);
-    const worksheet = xlsx.utils.json_to_sheet(responsesToExcel);
+    // // res.status(200).send(responsesToExcel);
+    // const worksheet = xlsx.utils.json_to_sheet(responsesToExcel);
 
-    // Create a new workbook and append the worksheet
+    // // Create a new workbook and append the worksheet
+    // const workbook1 = xlsx.utils.book_new();
+    // xlsx.utils.book_append_sheet(workbook1, worksheet, "Analysis");
+
+    // // Save the Excel file
+    // const filePath1 = "./response-analysis.xlsx";
+
+    // xlsx.writeFile(workbook1, filePath1);
+    // const conn = mongoose.connection;
+
+    // conn.once('open', async () => {
+    //   console.log('MongoDB connection established.');
+    
+    //   const gridfsBucket = new GridFSBucket(conn.db, {
+    //     bucketName: 'uploads', // Name of the bucket
+    //   });
+    
+    //   // const filePath = './response-analysis.xlsx';
+    //   const uploadStream = gridfsBucket.openUploadStream(path.basename(filePath1), {
+    //     contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    //   });
+    
+    //   fs.createReadStream(filePath1)
+    //     .pipe(uploadStream)
+    //     .on('error', (err) => {
+    //       console.error('Error uploading file:', err);
+    //     })
+    //     .on('finish', () => {
+    //       console.log('Excel file uploaded successfully to MongoDB.');
+    //     });
+    // });
+
+    // console.log(`Excel file saved to ${filePath1}`);
+
+    const worksheet = xlsx.utils.json_to_sheet(responsesToExcel);
     const workbook1 = xlsx.utils.book_new();
     xlsx.utils.book_append_sheet(workbook1, worksheet, "Analysis");
 
-    // Save the Excel file
-    const filePath1 = "./response-analysis.xlsx";
+    const filePath1 = path.resolve('./response-analysis.xlsx');
     xlsx.writeFile(workbook1, filePath1);
-
     console.log(`Excel file saved to ${filePath1}`);
 
-    // Send response with the Excel file download link
-    res.status(200).send({
+    // const conn = mongoose.connection;
+    if (!fs.existsSync(filePath1)) {
+      console.error('File not found:', filePath1);
+      return res.status(500).send({ message: 'File not found on server.' });
+    }
 
-      message: "Analysis completed and Excel file generated.",
-      downloadLink: filePath1,
-      responseinJson
+    
+    console.log(`Excel file saved to ${filePath1}`);
+
+    // Upload file to MongoDB GridFS
+    conn.on('error', (err) => {
+      console.error('MongoDB connection error:', err);
     });
+    
+    try {
+      const gridfsBucket = new GridFSBucket(conn.db, {
+        bucketName: 'uploads',
+      });
+    
+      const uploadStream = gridfsBucket.openUploadStream(path.basename(filePath1), {
+        contentType: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      });
+      const fileId = uploadStream.id;
+
+      fs.createReadStream(filePath1)
+        .pipe(uploadStream)
+        .on('error', (err) => {
+          console.error('Error uploading file:', err);
+          res.status(500).send({ message: 'Error uploading file to MongoDB.', error: err });
+        })
+        .on('finish', () => {
+          console.log(`Excel file uploaded successfully to MongoDB with ID: ${fileId}`);
+          res.status(200).send({
+            message: 'File uploaded successfully to MongoDB.',
+            fileId: fileId,
+            downloadLink: `/download/${fileId}`,
+            responseinJson
+          });
+        });
+    } catch (err) {
+      console.error('Unexpected error:', err);
+      res.status(500).send({ message: 'Unexpected server error.', error: err });
+    }
+    
+    // res.status(200).send({
+
+    //   message: "Analysis completed and Excel file generated.",
+    //   downloadLink: filePath1,
+    //   responseinJson
+    // });
   } catch (error) {
     // Handle errors
     if (error.response) {
@@ -340,6 +437,46 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     }
   }
 });
+
+app.get('/download/:id', async (req, res) => {
+  try {
+    const fileId = req.params.id;
+
+    if (!ObjectId.isValid(fileId)) {
+      return res.status(400).send({ message: 'Invalid file ID' });
+    }
+
+    const gridfsBucket = new GridFSBucket(conn.db, {
+      bucketName: 'uploads', // Use the same bucket name as used during upload
+    });
+
+    const downloadStream = gridfsBucket.openDownloadStream(new ObjectId(fileId));
+
+    // Set headers for file download
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': `attachment; filename="response-analysis.xlsx"`,
+    });
+
+    downloadStream
+      .on('error', (err) => {
+        console.error('Error downloading file:', err);
+        res.status(500).send({ message: 'Error downloading file', error: err });
+      })
+      .on('file', (file) => {
+        console.log('Downloading file:', file.filename);
+      })
+      .pipe(res)
+      .on('finish', () => {
+        console.log('File download completed.');
+      });
+  } catch (err) {
+    console.error('Error:', err);
+    res.status(500).send({ message: 'Unexpected server error', error: err });
+  }
+});
+
+
 
 // app.get("/get-code", async (req, res) => {
 const getCode = async (keyString) => {
