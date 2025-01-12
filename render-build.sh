@@ -3,7 +3,6 @@
 
 npm install
 # npm run build # uncomment if required
-
 # Store/pull Puppeteer cache with build cache
 if [[ ! -d $PUPPETEER_CACHE_DIR ]]; then 
   echo "...Copying Puppeteer Cache from Build Cache" 
