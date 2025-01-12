@@ -17,7 +17,9 @@ exports.puplocalstorage = async () => {
         async function loginAndGetLocalStorage(url, username, password) {
             //   // Launch a headless browser
             const browser = await puppeteer.launch({ 
-                headless: false,
+                headless: true,
+                cacheDir: '/opt/render/.cache/puppeteer',
+                
                 args: [
                     '--no-sandbox',
                       '--disable-setuid-sandbox',
