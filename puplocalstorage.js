@@ -16,7 +16,17 @@ exports.puplocalstorage = async () => {
 
         async function loginAndGetLocalStorage(url, username, password) {
             //   // Launch a headless browser
-            const browser = await puppeteer.launch({ headless: true }); // Set to false for debugging
+            const browser = await puppeteer.launch({ 
+                headless: false,
+                args: [
+                    '--no-sandbox',
+                      '--disable-setuid-sandbox',
+                      '--disable-dev-shm-usage',
+                      '--remote-debugging-port=9222',
+                      '--start-maximized',
+                      '--ignore-certificate-errors'
+                  ],
+             }); // Set to false for debugging
             const page = await browser.newPage();
             await page.setViewport({
             width: 1920, // Full width for most screens
