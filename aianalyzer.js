@@ -5,15 +5,19 @@ const grop = new Groq({
     apiKey: process.env.GROQ_API_KEY,
     // apiKey: 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,
 });
-exports.aianalyzer = async (data) => {
+exports.aianalyzer = async (data, analysisType) => {
     // let prompt = data.codeComponents;
     let prompt = data.codeComponents.map(obj => JSON.stringify(obj, null, 2)).join('\n'); // Join objects as JSON with line breaks
 
     // let systemPrompt = data.QuestionData + data.tcList;
     let systemPrompt = data.QuestionData;
     let tcList = data.tcList;
+    if(analysisType == "detailed"){
     prompt += '\nAnalyze the provided solution file line by line based on the given description, and give failure analysis where code went wrong based on description in 3 to 4 sentences. & provide final analysis in 3 sentences'
+    } else if (analysisType == "short"){
+    prompt += '\nGive analysis for the provided solution file based on the given description, even if the methods classes, properties spelling were wrong reporst in the analysis. The analysis should contains only 3 to 4 sentences.'
     // console.log(prompt);
+    }
     
     try {
         // console.log(data.codeComponents);

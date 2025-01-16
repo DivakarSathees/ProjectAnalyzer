@@ -143,6 +143,13 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     if (!req.file) {
       return res.status(400).send({ error: "No file uploaded." });
     }
+    const { analysisType } = req.body;
+
+    if (!analysisType) {
+      return res.status(400).send({ error: "Analysis type not provided." });
+    }
+    
+    console.log("Analysis Type:", analysisType);
 
     // Read and parse the Excel file
     const filePath = req.file.path;
@@ -264,7 +271,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
   const differenceInMinutes = Math.abs(differenceInMs / (1000 * 60)); // Convert ms to minutes
   let differenceInTimeSubmission;
   if (differenceInMinutes <= 5) {
-    differenceInTimeSubmission = `${differenceInMinutes} mins`;
+    differenceInTimeSubmission = `${differenceInMinutes.toFixed(2)} mins`;
   } else {
     testid1 = test.testId
     // console.log("The difference is more than 5 minutes.");
@@ -276,7 +283,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
 
   let ai;
   try {
-    ai = await aianalyzer(data);
+    ai = await aianalyzer(data, analysisType);
   } catch (error) {
     console.error("AI Analyzer Error:", error);
     ai = { content: "AI analysis could not be generated due to an error." };
