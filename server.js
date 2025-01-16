@@ -143,13 +143,18 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     if (!req.file) {
       return res.status(400).send({ error: "No file uploaded." });
     }
-    const { analysisType } = req.body;
+    const { analysisType, token, email, password } = req.body;
+  
+    if(!token && (!email || !password)){
+      return res.status(400).send({ error: "Credentials were not provided." });
+    }
 
     if (!analysisType) {
       return res.status(400).send({ error: "Analysis type not provided." });
     }
     
     console.log("Analysis Type:", analysisType);
+    console.log("token:", token);
 
     // Read and parse the Excel file
     const filePath = req.file.path;
@@ -172,7 +177,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
 
     var asd;
     if(!req.body.token){
-      asd = await puplocalstorage();
+      asd = await puplocalstorage(email, password);
       console.log(asd);
     } else {
       asd = req.body.token 

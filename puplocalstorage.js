@@ -1,12 +1,13 @@
 const puppeteer = require('puppeteer');
 require('dotenv').config();
 
-exports.puplocalstorage = async () => {
+exports.puplocalstorage = async (email, password) => {
     try {
         const data = await loginAndGetLocalStorage(
             process.env.LTI_ADMIN_URL, // Replace with the actual login URL
-            process.env.LTI_USER_NAME,                 // Replace with your username
-            process.env.LTI_PASSWORD                       // Replace with your password
+            // process.env.LTI_USER_NAME,                 
+            // process.env.LTI_PASSWORD     
+            email, password              
         );
         return data; // Return the data here
     } catch (error) {
