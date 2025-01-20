@@ -1612,7 +1612,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
   }
   function extractPassFail(inputString) {
     console.log("divakar log:");
-    const nunitpassedRegex = /Passed\s+([\w_]+)\s+\[\d+\s\w+\]/g;
+    const nunitpassedRegex = /Passed\s+([\w_]+)\s+\[.*?\]/g;
     const nunitfailedRegex = /Failed\s+([\w_]+)\s+\[.*?\]\r\n\s+Error Message:\r\n\s+(.*?)\r\n\s+Stack Trace:/gs;
     const angsuccessRegex = /SUCCESS-([\w_]+)(?=\s|$)/g;
     const angfailedRegex = /FAILED-([\w_]+)\s*[\s\S]*?Error: (.*?)\s*$/gm;
@@ -1672,11 +1672,11 @@ console.log("results1");
     });
   }
 
-  while ((match = junitpassedRegex.exec(inputString)) !== null) {
-    if(!match[1].includes('Tests:')){
-      results.passed.push(match[1]);
-    }
-  }
+  // while ((match = junitpassedRegex.exec(inputString)) !== null) {
+  //   if(!match[1].includes('Tests:')){
+  //     results.passed.push(match[1]);
+  //   }
+  // }
 
   // console.log("match[0]");
   
