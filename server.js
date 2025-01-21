@@ -1568,7 +1568,8 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
   const extractTcList = (responseString) => {
     try {
         const jsonObject = JSON.parse(responseString);
-        return jsonObject.tc_list || [];
+        const jsonObject1 = JSON.parse(responseString1);        
+        return (jsonObject.tc_list && jsonObject.tc_list.length > 0) ? jsonObject.tc_list : jsonObject1.tc_list || [];
     } catch (error) {
         console.error("Error parsing the response string:", error);
         return [];
