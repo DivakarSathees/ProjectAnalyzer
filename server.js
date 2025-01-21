@@ -1540,7 +1540,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
 
     // Find the event where event_data is "test_submited" and get its answer
     await answer.forEach(event => {
-      if (event.event_type === 'test-submitted') {
+      if (event.event_type.includes('test-submitted')) {
         responseString = event.event_data.answer;
       }
     });
