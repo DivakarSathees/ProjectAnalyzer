@@ -1470,7 +1470,6 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     }
     
     console.log("Analysis Type:", analysisType);
-    console.log("token:", token);
 
     // Read and parse the Excel file
     const filePath = req.file.path;
@@ -1486,7 +1485,6 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
       };
     });
 
-    console.log(testIds);
     fs.unlinkSync(filePath);
     
 
@@ -1494,7 +1492,6 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     var asd;
     if(!req.body.token){
       asd = await puplocalstorage(email, password);
-      console.log(asd);
     } else {
       asd = req.body.token 
     }
@@ -1547,7 +1544,6 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
         responseString = event.event_data.answer;
       }
     });
-    console.log(responseString);
     
     const testSubmitedTimeUTS = response.data.frozen_test_data[0].questions[0].student_questions.updatedAt;
     const testSubmitedTimeIST = await ISTtimeconverter(testSubmitedTimeUTS);
@@ -1640,10 +1636,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
       }
       
     }
-    
-    console.log('Failed Details:', failedDetails);
 
-console.log("results1");
 
 
     let match;
@@ -1653,7 +1646,6 @@ console.log("results1");
 
     // Extract failed tests and their error messages
     while ((match = nunitfailedRegex.exec(inputString)) !== null) {
-      console.log(match[1]);
       
       results.failed.push({
         testName: match[1],
@@ -1698,7 +1690,6 @@ console.log("results1");
   // }
 
     // Output the results
-    console.log(JSON.stringify(results, null, 2));
     return JSON.stringify(results, null, 2);
   }
 
@@ -1709,7 +1700,6 @@ console.log("results1");
 const extractResultList = async (responseString) => {
   try {
     const jsonObject = JSON.parse(responseString); // Parse the response string
-    console.log("Parsed JSON Object:", jsonObject.tc_list);
     const hasCompilationError = jsonObject.tc_list.some(tc => tc.result === 'Compilation Error');
   
     let allResultLogs = []; // Collect all result logs from all items
@@ -1725,7 +1715,6 @@ const extractResultList = async (responseString) => {
               if(hasCompilationError){
               const errorlog =  extractErrors(resultObject.output.stderr || resultObject.output.stdout)
               if(errorlog == [] || errorlog == null || errorlog == ''){
-                console.log("inside "+resultObject.output);
                 allResultLogs.push(resultObject.output); 
               } else{
                 console.log("errorlog");
@@ -1745,7 +1734,6 @@ const extractResultList = async (responseString) => {
       }
     });
   
-    console.log("All Extracted Result Logs:", allResultLogs);
     return allResultLogs; // Return all collected results
   } catch (error) {
     console.error("Error parsing the response string or processing resultList:", error);
@@ -1888,7 +1876,6 @@ const extractFailedTestCases = (logs) => {
     // Extract the full details of failed test cases
     const failedTestCases = parsedLogs.failed;
     if(failedTestCases){
-      console.log("Extracted Full Failed Test Cases:", failedTestCases);
     return failedTestCases;
     } else{
       return null;
@@ -1908,13 +1895,11 @@ const FailedtestcaseswithTestcase = await extractFailedTestsAndSetups(testCodeDa
 
 async function processTestCases(responseString) {
   resultList = await extractResultList(responseString);
-  console.log("qqqqqqqqqq");
-  console.log(resultList);
+
 
   
   const failedTestCases = await extractFailedTestCases(resultList);
-  console.log("ddddddddd");
-  console.log(failedTestCases);
+
 //   if(failedTestCases == null || failedTestCases == []){  
 //     // resultList = failedTestCases
 //     console.log("sssssssss");
@@ -1951,8 +1936,7 @@ async function processTestCases(responseString) {
 // });
 
   const tcList = extractTcList(responseString);
-  console.log("Extracted log123:", failedTestcaseMessage);
-  console.log("Extracted log9894157619:", FailedtestcaseswithTestcase);
+
   // console.log(key);
  
   var data = {
