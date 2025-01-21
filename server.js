@@ -1552,7 +1552,8 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     const extractKey = (responseString) => {
       try {
           const jsonObject = JSON.parse(responseString);
-          const resultString = jsonObject.resultList[0].result;
+          const jsonObject1 = JSON.parse(responseString1);        
+          const resultString = jsonObject.resultList.length > 0 ? jsonObject.resultList[0].result : jsonObject1.resultList[0].result;
           const keyMatch = resultString.match(/"key":"(.*?)"/);
           return keyMatch ? keyMatch[1] : null;
       } catch (error) {
