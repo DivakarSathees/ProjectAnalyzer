@@ -152,13 +152,10 @@ exports.aianalyzer = async (data, analysisType) => {
     // let systemPrompt = data.QuestionData + data.tcList;
     let systemPrompt = data.QuestionData;
     let tcList = data.tcList;
-    console.log("data.log");
-    
-    console.log(data.log);
+
     
     let log123 = JSON.parse(data.log) || data.log;
     let testCode = data.testCode
-    console.log("lodddd +");
     // console.log(data.tcList)
     let lodString = JSON.stringify(log123.failed);
 
