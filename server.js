@@ -1307,6 +1307,8 @@ app.use(cors({ origin: ['https://forntend-weightagesplit-1.onrender.com','http:/
 async function TestCodeSplitter(element, keyString, testCodeData) {
   if (element.name.includes("appsettings") || 
       // element.name.includes("UnitTest") || 
+      element.name.includes("HomeController") || 
+      element.name.includes("ErrorViewModel") || 
       element.name.includes("Using") || 
       element.name.includes("WeatherForecast") || 
       element.name.includes("csproj") || 
