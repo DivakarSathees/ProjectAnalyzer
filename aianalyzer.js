@@ -262,7 +262,7 @@ exports.aianalyzer = async (data, analysisType) => {
         // for await (const chunk of response) {
         //     process.stdout.write(chunk.choices[0]?.delta?.content || '');
         //   }
-        console.log(response.choices[0].message);
+        // console.log(response.choices[0].message);
         
         return response.choices[0].message;
     } catch (error) {
