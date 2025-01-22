@@ -84,7 +84,7 @@ async function CodeSplitter(element, keyString ) {
     console.log(`Skipping directory: ${element.name}`);
     return null;
   }
-  console.log(element.path);
+  // console.log(element.path);
 
   // if(element.qualifier === "UTS"){
   //   TestCodeSplitter(element, keyString, testCodeData);
@@ -133,7 +133,7 @@ async function ISTtimeconverter(dateTime) {
 
   const amPm = hour24 >= 12 ? "PM" : "AM";
   const dateSubmitted = yr+"-"+month+"-"+date+" | "+hour12+":"+min+":"+sec+" "+amPm;
-  console.log("DateTime (12-hour format):",dateSubmitted);
+  // console.log("DateTime (12-hour format):",dateSubmitted);
   // return dateSubmitted;
   return {yr, month, date, hour12, min, sec, amPm, dateSubmitted, istDate};
 }
@@ -490,8 +490,8 @@ const extractResultList = async (responseString) => {
               if(errorlog == [] || errorlog == null || errorlog == ''){
                 allResultLogs.push(resultObject.output); 
               } else{
-                console.log("errorlog");
-                console.log(errorlog);
+                // console.log("errorlog");
+                // console.log(errorlog);
                 
               allResultLogs.push(errorlog); 
               }

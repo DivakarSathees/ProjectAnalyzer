@@ -193,7 +193,7 @@ exports.aianalyzer = async (data, analysisType) => {
         console.error("Error processing logs:", error);
     }
 
-    console.log(logString);
+    // console.log(logString);
     
 
 
