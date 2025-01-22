@@ -152,12 +152,56 @@ exports.aianalyzer = async (data, analysisType) => {
     // let systemPrompt = data.QuestionData + data.tcList;
     let systemPrompt = data.QuestionData;
     let tcList = data.tcList;
+    // console.log("aialaysis +"+data.log);
+    const wrappedLogs = `[${data.log}]`;
 
     
-    let log123 = JSON.parse(data.log) || data.log;
-    let testCode = data.testCode
-    // console.log(data.tcList)
-    let lodString = JSON.stringify(log123.failed);
+    let log123 = JSON.parse(wrappedLogs) || wrappedLogs;
+
+    // console.log("lodStrin g ");
+    // console.log("Input Logs:", log123);
+
+    let logString;
+    try{
+        const flattenedLogs = log123.flatMap(entry => {
+
+            if (!entry || typeof entry !== "object") return []; // Ignore null or invalid entries
+
+            if (entry.errors && entry.errors.length > 0) {
+                const uniqueErrors = Array.from(
+                  new Set(entry.errors.flat()) // Flatten the array and remove duplicates
+                ).filter(error => error.trim() !== ""); // Remove empty strings if any
+              
+                // console.log(uniqueErrors);
+                return uniqueErrors;
+            }
+
+            if (Array.isArray(entry.failed) && entry.failed.some(item => item.testName)) {
+                return entry.failed
+                // .filter(failure => failure !== null).map(failure => ({
+                // testName: failure, // Assume failure is the testName in this case
+                // errorMessage: null // No error message if just a failed test name
+            }
+        // ));
+            // }
+
+            return []; // No `failed` or `errors` to process
+        }).filter(Boolean);
+        logString = JSON.stringify(flattenedLogs, null, 2);
+    }
+    catch (error) {
+        console.error("Error processing logs:", error);
+    }
+
+    console.log(logString);
+    
+
+
+
+    
+    // let log123 = JSON.parse(data.log) || data.log;
+    // let testCode = data.testCode
+    // let lodString = JSON.stringify(log123.failed);
 
 
     // if(analysisType == "detailed"){
@@ -181,7 +225,7 @@ exports.aianalyzer = async (data, analysisType) => {
     
     try {
         // console.log(data.codeComponents);
-        
+        // return "null";
         // console.log("try block");
         if(data.codeComponents == [] || data.codeComponents == ""){
             return "No solution is fetched"
@@ -200,7 +244,7 @@ exports.aianalyzer = async (data, analysisType) => {
                         // { role: "system", content: log123 }, // log in terminal
                         { role: "system", content: `
                                         Description: ${data.QuestionData}
-                                        Logs: ${lodString}`
+                                        Logs: ${logString}`
                         }, // testcase file
                         {
                             role: "user",
