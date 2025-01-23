@@ -289,6 +289,8 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     const testSubmitedTimeIST = await ISTtimeconverter(testSubmitedTimeUTS);
 
     
+
+    
     const extractKey = (responseString) => {
       try {
           const jsonObject = JSON.parse(responseString);
@@ -715,6 +717,8 @@ async function processTestCases(responseString) {
   const tcList = extractTcList(responseString);
 
   // console.log(key);
+
+  
  
   var data = {
     // 'key': key,
@@ -725,16 +729,34 @@ async function processTestCases(responseString) {
     log: failedTestcaseMessage,
     testCode: testCodeData
   }
+  
   let sonarAddedDateIST;
-  const sonarAddedDate = await axios.get(
-    `https://sonarcloud.io/api/project_branches/list?project=iamneo-production_${key}`);
+  // const sonarAddedDate = await axios.get(
+  //   `https://sonarcloud.io/api/project_branches/list?project=iamneo-production_${key}`);
+
+    const sonarAddedDate = await axios.get(`https://sonarcloud.io/api/project_branches/list?project=iamneo-production_${key}`, {
+      validateStatus: (status) => status === 200 || status === 404,
+    });
+
+    if (sonarAddedDate.status === 404) {
+      console.warn("Endpoint not found. Returning an empty array.");
+      // return [];
+    }
+
+
+    var testid1 = ''
+  let differenceInTimeSubmission;
+
+
+
+    if (sonarAddedDate.status != 404) {
+
   const sonardate = sonarAddedDate?.data?.branches[0]?.commit?.date || "null date";
   if(sonardate != "null date"){
     sonarAddedDateIST = await ISTtimeconverter(sonardate);
   } else {
     sonarAddedDateIST = "Not recorded"
   }
-  var testid1 = ''
   const diffInMillis = Math.abs(testSubmitedTimeIST.istDate - sonarAddedDateIST.istDate);
   // Convert to hours, minutes, and seconds
   const diffInHours = Math.floor(diffInMillis / (1000 * 60 * 60)); // Whole hours
@@ -743,7 +765,6 @@ async function processTestCases(responseString) {
   const formattedHours = diffInHours.toString().padStart(2, "0");
   const formattedMinutes = diffInMinutes.toString().padStart(2, "0");
   const formattedSeconds = diffInSeconds.toString().padStart(2, "0");
-  let differenceInTimeSubmission;
   if (formattedMinutes <= 5) {
     differenceInTimeSubmission = `${formattedHours}:${formattedMinutes}:${formattedSeconds} mins`;
   } else {
@@ -751,6 +772,13 @@ async function processTestCases(responseString) {
     // console.log("The difference is more than 5 minutes.");
     differenceInTimeSubmission = `The difference is more than 5 minutes or not recorded on submission of test. Check manually for Latest Code`;
   }
+}
+else {
+  testid1 = test.testId
+  sonarAddedDateIST = "Not Recorded"
+  // console.log("The difference is more than 5 minutes.");
+  differenceInTimeSubmission = `The difference is more than 5 minutes or not recorded on submission of test. Check manually for Latest Code`;
+}
     
 
 
@@ -781,7 +809,7 @@ async function processTestCases(responseString) {
     Secured_Mark: response.data.t_marks,
     Total_Mark: response.data.t_total_marks,
     Test_Submitted_Time: testSubmitedTimeIST.dateSubmitted,
-    SonarAddedTime: sonarAddedDateIST.dateSubmitted,
+    SonarAddedTime: sonarAddedDateIST?.dateSubmitted || null,
     Differnce_In_Submission: differenceInTimeSubmission,
     // token: authToken,
     // tcList: JSON.stringify(tcList, null, 2),
@@ -801,7 +829,7 @@ async function processTestCases(responseString) {
     codeComponents: codeData,
     aiAnalysis: ai.content || ai,
     Test_Submitted_Time: testSubmitedTimeIST.dateSubmitted,
-    SonarAddedTime: sonarAddedDateIST.dateSubmitted,
+    SonarAddedTime: sonarAddedDateIST?.dateSubmitted || null,
     Differnce_In_Submission: differenceInTimeSubmission,
     // log: resultList,
     log: failedTestcaseMessage,
@@ -965,8 +993,18 @@ app.get('/download/:id', async (req, res) => {
 // app.get("/get-code", async (req, res) => {
 const getCode = async (keyString, testCodeData) => {
   try {
+    console.log(keyString);
+    
     const files = `https://sonarcloud.io/api/measures/component_tree?ps=100&s=qualifier%2Cname&component=iamneo-production_${keyString}&metricKeys=ncloc%2Cvulnerabilities%2Cbugs%2Ccode_smells%2Csecurity_hotspots%2Ccoverage%2Cduplicated_lines_density&strategy=children`;
-    const filesResponse = await axios.get(files);
+    // const filesResponse = await axios.get(files);
+    const filesResponse = await axios.get(files, {
+      validateStatus: (status) => status === 200 || status === 404,
+    });
+
+    if (filesResponse.status === 404) {
+      console.warn("Endpoint not found. Returning an empty array.");
+      return [];
+    }
 
     if (!filesResponse.data.components) {
       // return res.status(404).json({ error: "No components found in the response." });
@@ -1012,8 +1050,9 @@ const getCode = async (keyString, testCodeData) => {
 
     // res.json({ components: filteredResults });
   } catch (error) {
-    console.error("Error fetching data:", error.message);
-    throw new Error("Failed to fetch and process data.");
+    console.error("Error fetching data1:", error.message);
+    return [];
+    // throw new Error("Failed to fetch and process data.");
     // res.status(500).json({ error: "Failed to fetch data from the URL." });
   }
 }
