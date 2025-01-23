@@ -1058,6 +1058,18 @@ const getCode = async (keyString, testCodeData) => {
 }
 // );
 
+app.delete('/delete-all-files', async (req, res) => {
+  try {
+    const result = await conn.db.collection('uploads.chunks').deleteMany({});
+    const result1 = await conn.db.collection('uploads.files').deleteMany({});
+    res
+      .status(200)
+      .send(`All records in 'uploads.chunks and uploads.files' deleted successfully. Count: ${result.deletedCount + result1.deletedCount}`);
+  } catch (error) {
+    res.status(500).send('Error deleting records: ' + error.message);
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
