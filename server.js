@@ -74,17 +74,35 @@ async function TestCodeSplitter(element, keyString, testCodeData) {
 
 async function CodeSplitter(element, keyString ) {
   if (element.name.includes("appsettings") || 
-      // element.name.includes("UnitTest") || 
+      element.name.includes("UnitTest") || 
       element.name.includes("HomeController") || 
       element.name.includes("ErrorViewModel") || 
       element.name.includes("Using") || 
       element.name.includes("WeatherForecast") || 
       element.name.includes("csproj") || 
-      element.name.includes("sln")) {
+      element.name.includes("sln") ||
+      element.name.includes("angular.json") || 
+      element.name.includes("conf.") || 
+      element.name.includes("package") || 
+      element.name.includes("index.html") || 
+      element.name.includes("main.ts") || 
+      element.name.includes("polyfills.ts") || 
+      element.name.includes("styles.css") || 
+      element.name.includes("test.ts") || 
+      element.name.includes("tsconfig") || 
+      element.name.includes("environment") || 
+      element.name.includes("app.component.css") || 
+      element.name.includes("app.component.html") || 
+      element.name.includes("app.e2e-spec") || 
+      element.name.includes("app.po") || 
+      element.name.includes("spec.ts") || 
+      element.name.includes("tslint") || 
+      element.name.includes(".css") ||
+      (element.path.includes('.cs') && element.qualifier === "UTS")
+    ) {
     console.log(`Skipping directory: ${element.name}`);
     return null;
   }
-  // console.log(element.path);
 
   // if(element.qualifier === "UTS"){
   //   TestCodeSplitter(element, keyString, testCodeData);
@@ -99,7 +117,8 @@ async function CodeSplitter(element, keyString ) {
     throw new Error(`No sources found for file: ${element.name}`);
   }
 
-  const codeLines = response.data.sources
+
+  let codeLines = response.data.sources
     .map((source) =>
       source.code
         .replace(/<\/?[^>]+(>|$)/g, "")
@@ -108,6 +127,8 @@ async function CodeSplitter(element, keyString ) {
         // .replace(/&gt;/g, ">")
     )
     .join("\n");
+  codeLines = codeLines.replace(/&gt;/g, '>');
+  codeLines = codeLines.replace(/&lt;/g, '<');
 
   return { type: "file", name: element.name, code: codeLines };
 }
@@ -141,13 +162,19 @@ async function ISTtimeconverter(dateTime) {
 async function DirHandler(element, keyString, testCodeData) {
   if (element.name.toLowerCase() === "migrations".toLowerCase() ||
   element.name.toLowerCase() === "properties".toLowerCase() ||
-  // element.name.toLowerCase() === "testproject".toLowerCase() ||
+  element.name.toLowerCase() === "testproject".toLowerCase() ||
+  element.name.toLowerCase() === "e2e".toLowerCase() ||
   element.name.toLowerCase() === "resources".toLowerCase() ||
     element.name.toLowerCase() === "views".toLowerCase() ||
-    element.name.toLowerCase() === "wwwroot".toLowerCase()) {
+    element.name.toLowerCase() === "wwwroot".toLowerCase() ||
+    element.name.toLowerCase() === "environments".toLowerCase()
+    // (element.path.includes('.cs') && element.qualifier === "UTS")
+  ) {
     console.log(`Skipping directory: ${element.name}`);
     return null;
   }
+
+  
 
   const dirUrl = `https://sonarcloud.io/api/measures/component_tree?ps=100&s=qualifier%2Cname&component=iamneo-production_${keyString}%3A${element.path}&metricKeys=ncloc%2Cvulnerabilities%2Cbugs%2Ccode_smells%2Csecurity_hotspots%2Ccoverage%2Cduplicated_lines_density&strategy=children`;
   const dirResponse = await axios.get(dirUrl);
@@ -158,9 +185,12 @@ async function DirHandler(element, keyString, testCodeData) {
 
   const children = await Promise.all(
     dirResponse.data.components.map(async (child) => {
+
+      
       if (child.name === "Migrations" || child.name === "Properties"
-          // || element.name === "TestProject"
-          || element.name === "resources"
+          || child.name === "TestProject"
+          || child.name === "e2e"
+          || child.name === "resources" || (child.path.includes('.cs') && child.qualifier === "UTS")
           ) {
         console.log(`Skipping: ${child.name}`);
         return null; // Skip this child
@@ -168,11 +198,11 @@ async function DirHandler(element, keyString, testCodeData) {
 
       if (child.qualifier === "FIL" || child.qualifier === "UTS") {
         try {
-          if (child.qualifier === "UTS") {
-            // Process UTS files separately
-            await TestCodeSplitter(child, keyString, testCodeData);
-            return null;
-          }
+          // if (child.qualifier === "UTS") {
+          //   // Process UTS files separately
+          //   await TestCodeSplitter(child, keyString, testCodeData);
+          //   return null;
+          // }
           return await CodeSplitter(child, keyString);
         } catch (error) {
           console.error(`Error processing file ${child.name}:`, error.message);
@@ -1022,11 +1052,11 @@ const getCode = async (keyString, testCodeData) => {
 
       if (element.qualifier === "FIL" || element.qualifier === "UTS") {
         try {
-          if (element.qualifier === "UTS") {
-            // Process UTS files separately
-            await TestCodeSplitter(element, keyString, testCodeData);
-            return null;
-          }
+          // if (element.qualifier === "UTS") {
+          //   // Process UTS files separately
+          //   await TestCodeSplitter(element, keyString, testCodeData);
+          //   return null;
+          // }
           return await CodeSplitter(element, keyString);
         } catch (error) {
           console.error(`Error processing file ${element.name}:`, error.message);

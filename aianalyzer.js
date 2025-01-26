@@ -13,13 +13,14 @@ const Groq = require("groq-sdk");
 
 const grop = new Groq({
     apiKey: process.env.GROQ_API_KEY,
-    // apiKey: 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,
 });
 exports.aianalyzer = async (data, analysisType) => {
-    // let prompt = data.codeComponents;
-    let prompt = data.codeComponents.map(obj => JSON.stringify(obj, null, 2)).join('\n'); // Join objects as JSON with line breaks
+    // console.log(data.codeComponents);
+    // let prompt = data.codeComponents.map(obj => JSON.stringify(obj, null, 2)).join('\n'); 
 
-    // let systemPrompt = data.QuestionData + data.tcList;
+    let angularAppObject = data.codeComponents.find(obj => obj.name === 'angularapp');
+    let prompt = angularAppObject ? JSON.stringify(angularAppObject, null, 2) : data.codeComponents.map(obj => JSON.stringify(obj, null, 2)).join('\n');
+
     let systemPrompt = data.QuestionData;
     let tcList = data.tcList;
     // console.log("aialaysis +"+data.log);
@@ -86,9 +87,16 @@ exports.aianalyzer = async (data, analysisType) => {
     }
 
     const tokenCount = getTokenCount(prompt);
+    let tokenCountQuestion = getTokenCount(data.QuestionData);
+    const tokenCountlog = getTokenCount(logString);
     const tokenLimit = 8192; // Adjust based on the model you're using (4,096 tokens for GPT-3)
 
-    if (tokenCount > tokenLimit) {
+    if(tokenCount+tokenCountQuestion+tokenCountlog > tokenLimit){
+        data.QuestionData = '';
+        tokenCountQuestion = getTokenCount(data.QuestionData);
+    }
+
+    if (tokenCount+tokenCountQuestion+tokenCountlog > tokenLimit) {
         console.log(`Input size is too large! Tokens: ${tokenCount}`);
         return "Input is too large for the model. Please reduce the input size.";
     }
