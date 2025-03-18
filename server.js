@@ -301,7 +301,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     );
     const QuestionData = response.data.frozen_test_data[0].questions[0].question_data;
     // console.log(response.data.frozen_test_data[0].questions[0].project_questions.boilerPlate.url);
-    console.log(response.data.frozen_test_data[0].questions[0].student_questions.answer);
+    // console.log(response.data.frozen_test_data[0].questions[0].student_questions.answer);
     const responseString1 = response.data.frozen_test_data[0].questions[0].student_questions.answer;
     // const responseString = response.data.frozen_test_data[0].questions[0].student_questions.student_questions_events[0].event_data.answer;
     const answer = response.data.frozen_test_data[0].questions[0].student_questions.student_questions_events;
