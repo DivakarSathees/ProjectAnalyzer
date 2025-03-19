@@ -97,7 +97,9 @@ async function CodeSplitter(element, keyString ) {
       element.name.includes("app.po") || 
       element.name.includes("spec.ts") || 
       element.name.includes("tslint") || 
-      element.name.includes(".css") ||
+      element.name.includes("component.css") ||
+      element.name.includes("appdb") ||
+      element.name.includes("server.js") ||
       (element.path.includes('.cs') && element.qualifier === "UTS")
     ) {
     console.log(`Skipping directory: ${element.name}`);
@@ -167,7 +169,8 @@ async function DirHandler(element, keyString, testCodeData) {
   element.name.toLowerCase() === "resources".toLowerCase() ||
     element.name.toLowerCase() === "views".toLowerCase() ||
     element.name.toLowerCase() === "wwwroot".toLowerCase() ||
-    element.name.toLowerCase() === "environments".toLowerCase()
+    element.name.toLowerCase() === "environments".toLowerCase() ||
+    element.path.includes('appdb')
     // (element.path.includes('.cs') && element.qualifier === "UTS")
   ) {
     console.log(`Skipping directory: ${element.name}`);
