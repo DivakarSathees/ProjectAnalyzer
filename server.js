@@ -84,10 +84,10 @@ async function CodeSplitter(element, keyString ) {
       element.name.includes("angular.json") || 
       element.name.includes("conf.") || 
       element.name.includes("package") || 
-      element.name.includes("index.html") || 
+      // element.name.includes("index.html") || 
       element.name.includes("main.ts") || 
       element.name.includes("polyfills.ts") || 
-      element.name.includes("styles.css") || 
+      // element.name.includes("styles.css") || 
       element.name.includes("test.ts") || 
       element.name.includes("tsconfig") || 
       element.name.includes("environment") || 
