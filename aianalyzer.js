@@ -19,6 +19,16 @@ exports.aianalyzer = async (data, analysisType) => {
     // let prompt = data.codeComponents.map(obj => JSON.stringify(obj, null, 2)).join('\n'); 
 
     let angularAppObject = data.codeComponents.find(obj => obj.name === 'angularapp');
+    if (angularAppObject) {
+        let srcDir = angularAppObject.contents.find(dir => dir.name === 'src');
+
+        if (srcDir) {
+            // Remove .html & .css files directly inside src (not inside app)
+            srcDir.contents = srcDir.contents.filter(file => {
+                return !(file.type === 'file' && (file.name.endsWith('.html') || file.name.endsWith('.css')));
+            });
+        }
+    }
     let prompt = angularAppObject ? JSON.stringify(angularAppObject, null, 2) : data.codeComponents.map(obj => JSON.stringify(obj, null, 2)).join('\n');
 
     let systemPrompt = data.QuestionData;
