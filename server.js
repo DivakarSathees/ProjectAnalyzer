@@ -767,51 +767,104 @@ async function processTestCases(responseString) {
   // const sonarAddedDate = await axios.get(
   //   `https://sonarcloud.io/api/project_branches/list?project=iamneo-production_${key}`);
 
-    const sonarAddedDate = await axios.get(`https://sonarcloud.io/api/project_branches/list?project=iamneo-production_${key}`, {
-      validateStatus: (status) => status === 200 || status === 404,
-    });
+    // const sonarAddedDate = await axios.get(`https://sonarcloud.io/api/project_branches/list?project=iamneo-production_${key}`, {
+    //   validateStatus: (status) => status === 200 || status === 404,
+    // });
+    let differenceInTimeSubmission;
 
-    if (sonarAddedDate.status === 404) {
-      console.warn("Endpoint not found. Returning an empty array.");
-      // return [];
+    try {
+      const sonarAddedDate = await axios.get(
+          `https://sonarcloud.io/api/project_branches/list?project=iamneo-production_${key}`,
+          { validateStatus: (status) => status === 200 || status === 404 }
+      );
+      console.log("Sonar response:", sonarAddedDate.data);
+      if (sonarAddedDate.status === 404 || sonarAddedDate.status === 403) {
+        console.warn("Endpoint not found. Returning an empty array.");
+        // return [];
+      }
+  
+      var testid1 = ''
+    // let differenceInTimeSubmission;
+  
+      if (sonarAddedDate.status != 404) {
+  
+    const sonardate = sonarAddedDate?.data?.branches[0]?.commit?.date || "null date";
+    if(sonardate != "null date"){
+      sonarAddedDateIST = await ISTtimeconverter(sonardate);
+    } else {
+      sonarAddedDateIST = "Not recorded"
     }
-
-
-    var testid1 = ''
-  let differenceInTimeSubmission;
-
-
-
-    if (sonarAddedDate.status != 404) {
-
-  const sonardate = sonarAddedDate?.data?.branches[0]?.commit?.date || "null date";
-  if(sonardate != "null date"){
-    sonarAddedDateIST = await ISTtimeconverter(sonardate);
-  } else {
-    sonarAddedDateIST = "Not recorded"
+    const diffInMillis = Math.abs(testSubmitedTimeIST.istDate - sonarAddedDateIST.istDate);
+    // Convert to hours, minutes, and seconds
+    const diffInHours = Math.floor(diffInMillis / (1000 * 60 * 60)); // Whole hours
+    const diffInMinutes = Math.floor((diffInMillis % (1000 * 60 * 60)) / (1000 * 60)); // Remaining minutes
+    const diffInSeconds = Math.floor((diffInMillis % (1000 * 60)) / 1000); // Remaining seconds
+    const formattedHours = diffInHours.toString().padStart(2, "0");
+    const formattedMinutes = diffInMinutes.toString().padStart(2, "0");
+    const formattedSeconds = diffInSeconds.toString().padStart(2, "0");
+    if (formattedMinutes <= 5) {
+      differenceInTimeSubmission = `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
+    } else {
+      testid1 = test.testId
+      // console.log("The difference is more than 5 minutes.");
+      differenceInTimeSubmission = `The difference is more than 5 minutes or not recorded on submission of test. Check manually for Latest Code`;
+    }
   }
-  const diffInMillis = Math.abs(testSubmitedTimeIST.istDate - sonarAddedDateIST.istDate);
-  // Convert to hours, minutes, and seconds
-  const diffInHours = Math.floor(diffInMillis / (1000 * 60 * 60)); // Whole hours
-  const diffInMinutes = Math.floor((diffInMillis % (1000 * 60 * 60)) / (1000 * 60)); // Remaining minutes
-  const diffInSeconds = Math.floor((diffInMillis % (1000 * 60)) / 1000); // Remaining seconds
-  const formattedHours = diffInHours.toString().padStart(2, "0");
-  const formattedMinutes = diffInMinutes.toString().padStart(2, "0");
-  const formattedSeconds = diffInSeconds.toString().padStart(2, "0");
-  if (formattedMinutes <= 5) {
-    differenceInTimeSubmission = `${formattedHours}:${formattedMinutes}:${formattedSeconds} mins`;
-  } else {
+  else {
     testid1 = test.testId
+    sonarAddedDateIST = "Not Recorded"
     // console.log("The difference is more than 5 minutes.");
     differenceInTimeSubmission = `The difference is more than 5 minutes or not recorded on submission of test. Check manually for Latest Code`;
   }
-}
-else {
-  testid1 = test.testId
-  sonarAddedDateIST = "Not Recorded"
-  // console.log("The difference is more than 5 minutes.");
-  differenceInTimeSubmission = `The difference is more than 5 minutes or not recorded on submission of test. Check manually for Latest Code`;
-}
+  } catch (error) {
+      if (error.response && error.response.status === 403) {
+          console.warn("Access forbidden (403) - Continuing execution...");
+      } else {
+          console.error("Unexpected error:", error.message);
+      }
+  }
+
+//     if (sonarAddedDate.status === 404) {
+//       console.warn("Endpoint not found. Returning an empty array.");
+//       // return [];
+//     }
+
+
+//     var testid1 = ''
+//   let differenceInTimeSubmission;
+
+
+
+//     if (sonarAddedDate.status != 404) {
+
+//   const sonardate = sonarAddedDate?.data?.branches[0]?.commit?.date || "null date";
+//   if(sonardate != "null date"){
+//     sonarAddedDateIST = await ISTtimeconverter(sonardate);
+//   } else {
+//     sonarAddedDateIST = "Not recorded"
+//   }
+//   const diffInMillis = Math.abs(testSubmitedTimeIST.istDate - sonarAddedDateIST.istDate);
+//   // Convert to hours, minutes, and seconds
+//   const diffInHours = Math.floor(diffInMillis / (1000 * 60 * 60)); // Whole hours
+//   const diffInMinutes = Math.floor((diffInMillis % (1000 * 60 * 60)) / (1000 * 60)); // Remaining minutes
+//   const diffInSeconds = Math.floor((diffInMillis % (1000 * 60)) / 1000); // Remaining seconds
+//   const formattedHours = diffInHours.toString().padStart(2, "0");
+//   const formattedMinutes = diffInMinutes.toString().padStart(2, "0");
+//   const formattedSeconds = diffInSeconds.toString().padStart(2, "0");
+//   if (formattedMinutes <= 5) {
+//     differenceInTimeSubmission = `${formattedHours}:${formattedMinutes}:${formattedSeconds} mins`;
+//   } else {
+//     testid1 = test.testId
+//     // console.log("The difference is more than 5 minutes.");
+//     differenceInTimeSubmission = `The difference is more than 5 minutes or not recorded on submission of test. Check manually for Latest Code`;
+//   }
+// }
+// else {
+//   testid1 = test.testId
+//   sonarAddedDateIST = "Not Recorded"
+//   // console.log("The difference is more than 5 minutes.");
+//   differenceInTimeSubmission = `The difference is more than 5 minutes or not recorded on submission of test. Check manually for Latest Code`;
+// }
     
 
 
@@ -1083,7 +1136,7 @@ const getCode = async (keyString, testCodeData) => {
 
     // res.json({ components: filteredResults });
   } catch (error) {
-    console.error("Error fetching data1:", error.message);
+    console.error("Error fetching data1 from sonarQube:", error.message);
     return [];
     // throw new Error("Failed to fetch and process data.");
     // res.status(500).json({ error: "Failed to fetch data from the URL." });
