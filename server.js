@@ -12,6 +12,7 @@ const path = require("path");
 const cors = require('cors');
 const mongoose = require('mongoose');
 const { GridFSBucket, ObjectId } = require('mongodb');
+const FormData = require('form-data'); // Import the form-data package
 require('dotenv').config();
 
 
@@ -232,9 +233,9 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     if (!req.file) {
       return res.status(400).send({ error: "No file uploaded." });
     }
-    const { analysisType, token, email, password } = req.body;
+    const { analysisType, token, USEREMAIL, PASSWORD, LOGIN_URL, COURSE, MODULE, TESTNAME } = req.body;
   
-    if(!token && (!email || !password)){
+    if(!token && (!USEREMAIL || !PASSWORD)){
       return res.status(400).send({ error: "Credentials were not provided." });
     }
 
@@ -243,6 +244,8 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     }
     
     console.log("Analysis Type:", analysisType);
+    let testIds = [];
+    if(!COURSE){
 
     // Read and parse the Excel file
     const filePath = req.file.path;
@@ -251,20 +254,57 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
     // Process each row in the sheet
-    const testIds = sheetData.map((row) => {
+    testIds = sheetData.map((row) => {
       return {
         testId: row["Test ID"],
         url: row["URL"], // Assuming "URL" is a column name in the Excel sheet
       };
     });
+    // console.log("Test IDs:", testIds);
+    
 
     fs.unlinkSync(filePath);
-    
+  } else{ 
+    // make a post request to the API http://localhost:3000/visit to get the test IDs with body file, Login URL, USEREMAIL, PASSWORD, course
+    // pass the file, Login URL, USEREMAIL, PASSWORD, course to the API
+    const filePath = req.file.path; // Path to the uploaded file
+    const formData = new FormData();
+    formData.append("file", fs.createReadStream(filePath)); // Attach the file
+    formData.append("LOGIN_URL", LOGIN_URL); // Add Login URL
+    formData.append("USEREMAIL", USEREMAIL); // Add User Email
+    formData.append("PASSWORD", PASSWORD); // Add Password
+    formData.append("COURSE", COURSE); // Add Course
+    formData.append("MODULE", MODULE); // Add Course
+    formData.append("TESTNAME", TESTNAME); // Add Course
+
+    try {
+    // Make the POST request to the API
+    // const apiResponse = await axios.post("http://localhost:3000/visit", formData, {
+    const apiResponse = await axios.post(process.env.BACKEND_TESTID_URL, formData, {
+      headers: {
+        headers: formData.getHeaders(), // Use formData.getHeaders() from the form-data package
+      },
+    });
+
+    // Handle the response from the API
+    // console.log("API Response:", apiResponse.data);
+    testIds = apiResponse.data; // Assuming the response contains test IDs
+    // Process the test IDs as needed
+    } catch (error) {
+    console.error("Error making POST request to /visit API:", error.message);
+    res.status(500).send({ error: "Failed to fetch test IDs from the API." });
+    } finally {
+    // Clean up the uploaded file
+    fs.unlinkSync(filePath);
+    }
+
+
+  }
 
 
     var asd;
     if(!req.body.token){
-      asd = await puplocalstorage(email, password);
+      asd = await puplocalstorage(USEREMAIL, PASSWORD);
     } else {
       asd = req.body.token 
     }
