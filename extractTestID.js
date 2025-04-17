@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const xlsx = require("xlsx");
 const fs = require("fs");
+const { log } = require('console');
 
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -44,6 +45,7 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
                     '--start-maximized',
                     '--ignore-certificate-errors'
                 ],
+                protocolTimeout: 120000,
         });
 
     const page = await browser.newPage();
@@ -68,13 +70,16 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         console.log("Logging in...4");        
 
 
-        await page.waitForSelector("li[ptooltip='Courses']");
+        await page.waitForSelector("li[ptooltip='Courses']", { timeout: 30000 });
         await page.click("li[ptooltip='Courses']");
         console.log("Logging in...5");        
 
         await delay(5000);
+        console.log("Logging in...6");
 
-        await page.waitForSelector("input[placeholder='Enter course name to search']");
+        await page.waitForSelector("input[placeholder='Enter course name to search']", { timeout: 30000 });
+        console.log("Logging in...7");
+        
         await page.type("input[placeholder='Enter course name to search']", COURSE);
         await delay(10000);
 
