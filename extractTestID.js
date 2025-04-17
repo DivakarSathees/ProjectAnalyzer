@@ -81,7 +81,24 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         // console.log("Base64 Screenshot:\n", screenshotBuffer.toString('base64'));
         
 
-        await page.waitForSelector("input[placeholder='Enter course name to search']", { timeout: 30000 });
+        // await page.waitForSelector("input[placeholder='Enter course name to search']", { timeout: 30000 });
+
+        // Custom function to wait for an element in the browser context
+        await page.evaluate(async () => {
+            const selector = "input[placeholder='Enter course name to search']";
+            const timeout = 30000;
+            const interval = 100; // check every 100ms
+
+            const start = Date.now();
+            while (Date.now() - start < timeout) {
+                if (document.querySelector(selector)) {
+                    return;
+                }
+                await new Promise(resolve => setTimeout(resolve, interval));
+            }
+            throw new Error(`Timeout: Element ${selector} not found after ${timeout}ms`);
+        });
+
         console.log("Logging in...7");
         await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
 
