@@ -100,7 +100,7 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         });
 
         console.log("Logging in...7");
-        await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
+        // await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
 
         
         // await page.type("input[placeholder='Enter course name to search']", COURSE);
@@ -115,6 +115,8 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         }, COURSE);
         
         await delay(10000);
+        console.log("Logging in...8");
+
         await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
 
 
