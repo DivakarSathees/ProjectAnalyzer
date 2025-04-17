@@ -77,15 +77,19 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         await delay(5000);
         console.log("Logging in...6");
         await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
-        const screenshotBuffer = await page.screenshot({ fullPage: true });
-        console.log("Base64 Screenshot:\n", screenshotBuffer.toString('base64'));
+        // const screenshotBuffer = await page.screenshot({ fullPage: true });
+        // console.log("Base64 Screenshot:\n", screenshotBuffer.toString('base64'));
         
 
         await page.waitForSelector("input[placeholder='Enter course name to search']", { timeout: 30000 });
         console.log("Logging in...7");
+        await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
+
         
         await page.type("input[placeholder='Enter course name to search']", COURSE);
         await delay(10000);
+        await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
+
 
         await page.click("button.search-icon");
         await delay(4000);
