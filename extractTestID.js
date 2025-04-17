@@ -55,10 +55,12 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         await page.type("#password", PASSWORD);
         console.log("Logging in...");        
         await page.click(".form__button.ladda-button");
-        await page.waitForNavigation({ waitUntil: "networkidle2" });
+        await page.waitForNavigation(
+            // { waitUntil: "networkidle2" }
+        );
         await delay(2000);
 
-        await page.waitForSelector("li[ptooltip='Courses']", { visible: true });
+        await page.waitForSelector("li[ptooltip='Courses']");
         await page.click("li[ptooltip='Courses']");
         await delay(4000);
 
