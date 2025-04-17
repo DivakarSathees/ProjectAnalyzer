@@ -53,15 +53,23 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         await page.goto(url, { waitUntil: "networkidle2" });
         await page.type("#emailAddress", USEREMAIL);
         await page.type("#password", PASSWORD);
-        console.log("Logging in...");        
+        console.log("Logging in...1");        
         await page.click(".form__button.ladda-button");
+        console.log("Logging in...2");        
+
         await page.waitForNavigation(
             // { waitUntil: "networkidle2" }
         );
+        console.log("Logging in...3");        
+
         await delay(2000);
+        console.log("Logging in...4");        
+
 
         await page.waitForSelector("li[ptooltip='Courses']");
         await page.click("li[ptooltip='Courses']");
+        console.log("Logging in...5");        
+
         await delay(4000);
 
         await page.waitForSelector("input[placeholder='Enter course name to search']", { visible: true });
