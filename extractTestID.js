@@ -117,7 +117,7 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         await delay(10000);
         console.log("Logging in...8");
 
-        await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
+        // await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
 
 
         await page.click("button.search-icon");
