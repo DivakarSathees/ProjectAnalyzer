@@ -47,8 +47,10 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         });
 
     const page = await browser.newPage();
-    await page.setViewport({ width: 1480, height: 800 });
-
+    await page.setViewport({
+        width: 1920, // Full width for most screens
+        height: 1080, // Full height
+        });
     try {
         await page.goto(url, { waitUntil: "networkidle2" });
         await page.type("#emailAddress", USEREMAIL);
