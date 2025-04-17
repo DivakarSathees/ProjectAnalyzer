@@ -53,6 +53,7 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         await page.goto(url, { waitUntil: "networkidle2" });
         await page.type("#emailAddress", USEREMAIL);
         await page.type("#password", PASSWORD);
+        console.log("Logging in...");        
         await page.click(".form__button.ladda-button");
         await page.waitForNavigation({ waitUntil: "networkidle2" });
         await delay(2000);
@@ -67,6 +68,8 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
 
         await page.click("button.search-icon");
         await delay(4000);
+        console.log("Searching for course...");
+        
 
         const courseClicked = await page.evaluate((text) => {
             const xpath = `//*[contains(text(), "${text}")]`;
