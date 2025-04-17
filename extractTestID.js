@@ -72,7 +72,7 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
 
         await delay(5000);
 
-        await page.waitForSelector("input[placeholder='Enter course name to search']", { visible: true });
+        await page.waitForSelector("input[placeholder='Enter course name to search']");
         await page.type("input[placeholder='Enter course name to search']", COURSE);
         await delay(10000);
 
@@ -152,7 +152,7 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         for (const { UEmail } of UEmails) {
             console.log("Processing email:", UEmail);
 
-            await page.waitForSelector('input[placeholder="Enter your search term"]', { visible: true });
+            await page.waitForSelector('input[placeholder="Enter your search term"]');
             await page.click('input[placeholder="Enter your search term"]', { clickCount: 3 });
             await page.keyboard.press('Backspace');
             await page.type('input[placeholder="Enter your search term"]', UEmail, { delay: 100 });
@@ -160,7 +160,7 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
             await page.click('button.ui-inputgroup-addon-ec');
             await delay(3000);
 
-            await page.waitForSelector('#testresulttable tr:nth-child(2) td:nth-child(4) span:nth-child(2) i', { visible: true });
+            await page.waitForSelector('#testresulttable tr:nth-child(2) td:nth-child(4) span:nth-child(2) i');
             await page.click('#testresulttable tr:nth-child(2) td:nth-child(4) span:nth-child(2) i');
 
             await delay(3000);
