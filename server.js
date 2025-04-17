@@ -1208,6 +1208,10 @@ app.delete('/delete-all-files', async (req, res) => {
   }
 });
 
+app.get('/screenshot', (req, res) => {
+  res.sendFile(__dirname + '/screenshot_course_search.png');
+});
+
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
