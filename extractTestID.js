@@ -103,7 +103,17 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
 
         
-        await page.type("input[placeholder='Enter course name to search']", COURSE);
+        // await page.type("input[placeholder='Enter course name to search']", COURSE);
+        await page.evaluate((courseName) => {
+            const input = document.querySelector("input[placeholder='Enter course name to search']");
+            if (input) {
+                input.value = courseName;
+                input.dispatchEvent(new Event('input', { bubbles: true })); // simulate typing event
+            } else {
+                throw new Error("Input field not found");
+            }
+        }, COURSE);
+        
         await delay(10000);
         await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
 
