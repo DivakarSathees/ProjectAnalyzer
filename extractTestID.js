@@ -33,8 +33,8 @@ exports.extractTestID = async (filepath, url, email, password, course, module, t
 
 async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE, TESTNAME, UEmails) {
     const browser = await puppeteer.launch({
-        headless: true,
-        // headless: false,
+        // headless: true,
+        headless: false,
         cacheDir: '/opt/render/.cache/puppeteer',
         args: [
                 '--no-sandbox',
@@ -57,12 +57,12 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         await page.click(".form__button.ladda-button");
         console.log("Logging in...2");        
 
-        await page.waitForNavigation(
-            // { waitUntil: "networkidle2" }
-        );
+        // await page.waitForNavigation(
+        //     // { waitUntil: "networkidle2" }
+        // );
         console.log("Logging in...3");        
 
-        await delay(2000);
+        await delay(10000);
         console.log("Logging in...4");        
 
 
@@ -70,7 +70,7 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         await page.click("li[ptooltip='Courses']");
         console.log("Logging in...5");        
 
-        await delay(4000);
+        await delay(5000);
 
         await page.waitForSelector("input[placeholder='Enter course name to search']", { visible: true });
         await page.type("input[placeholder='Enter course name to search']", COURSE);
