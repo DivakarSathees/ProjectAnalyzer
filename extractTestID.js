@@ -33,8 +33,8 @@ exports.extractTestID = async (filepath, url, email, password, course, module, t
 
 async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE, TESTNAME, UEmails) {
     const browser = await puppeteer.launch({
-        // headless: true,
-        headless: false,
+        headless: true,
+        // headless: false,
         cacheDir: '/opt/render/.cache/puppeteer',
         args: [
                 '--no-sandbox',
