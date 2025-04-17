@@ -5,6 +5,7 @@ const axios = require("axios");
 const he = require("he");
 const { aianalyzer } = require('./aianalyzer');
 const { puplocalstorage } = require('./puplocalstorage');
+const { extractTestID } = require('./extractTestID');
 const multer = require("multer");
 const xlsx = require("xlsx");
 const fs = require("fs");
@@ -13,6 +14,7 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const { GridFSBucket, ObjectId } = require('mongodb');
 const FormData = require('form-data'); // Import the form-data package
+const e = require('express');
 require('dotenv').config();
 
 
@@ -233,7 +235,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     if (!req.file) {
       return res.status(400).send({ error: "No file uploaded." });
     }
-    const { analysisType, token, USEREMAIL, PASSWORD, LOGIN_URL, COURSE, MODULE, TESTNAME } = req.body;
+    let { analysisType, token, USEREMAIL, PASSWORD, LOGIN_URL, COURSE, MODULE, TESTNAME } = req.body;
   
     if(!token && (!USEREMAIL || !PASSWORD)){
       return res.status(400).send({ error: "Credentials were not provided." });
@@ -280,33 +282,43 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     try {
     // Make the POST request to the API
     // const apiResponse = await axios.post("http://localhost:3000/visit", formData, {
-    const apiResponse = await axios.post(process.env.BACKEND_TESTID_URL, formData, {
-      headers: {
-        headers: formData.getHeaders(), // Use formData.getHeaders() from the form-data package
-      },
-    });
+    // const apiResponse = await axios.post(process.env.BACKEND_TESTID_URL, formData, {
+    //   headers: {
+    //     headers: formData.getHeaders(), // Use formData.getHeaders() from the form-data package
+    //   },
+    // });
+    // testIds = apiResponse.data; 
+    const { testIds: ids, token: extractedToken } = await extractTestID(
+      filePath,
+      LOGIN_URL,
+      USEREMAIL,
+      PASSWORD,
+      COURSE,
+      MODULE,
+      TESTNAME
+    );
 
-    // Handle the response from the API
-    // console.log("API Response:", apiResponse.data);
-    testIds = apiResponse.data; // Assuming the response contains test IDs
-    // Process the test IDs as needed
+    testIds = ids;
+    token = token || extractedToken;
+    
     } catch (error) {
     console.error("Error making POST request to /visit API:", error.message);
     res.status(500).send({ error: "Failed to fetch test IDs from the API." });
-    } finally {
-    // Clean up the uploaded file
-    fs.unlinkSync(filePath);
-    }
+    return;
+    } 
+    // finally {
+    // // Clean up the uploaded file
+    // fs.unlinkSync(filePath);
+    // }
 
 
   }
 
-
     var asd;
-    if(!req.body.token){
+    if(!token){
       asd = await puplocalstorage(USEREMAIL, PASSWORD);
     } else {
-      asd = req.body.token 
+      asd = token
     }
     
     // Example token; replace it with the actual authorization token
@@ -317,7 +329,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     // const requestBody = req.body.id;
     const responsesToExcel = [];
     const responseinJson = [];
-    for (const test of testIds) {
+    for (const test of testIds) {      
     const params = new URLSearchParams(new URL(test.testId).search);
     const testId = params.get("testId");
     console.log("Request Body:", {"id": testId});
