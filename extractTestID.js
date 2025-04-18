@@ -120,7 +120,22 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         // await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
 
 
-        await page.click("button.search-icon");
+        // await page.click("button.search-icon");
+        const clicked = await page.evaluate(() => {
+            const button = document.querySelector("button.search-icon");
+            if (button) {
+                button.click();
+                return true;
+            }
+            return false;
+        });
+        
+        if (clicked) {
+            console.log("✅ Search button clicked");
+        } else {
+            console.log("❌ Search button not found");
+        }
+        
         await delay(4000);
         console.log("Searching for course...");
         
