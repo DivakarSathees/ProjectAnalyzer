@@ -66,7 +66,7 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         // );
         console.log("Logging in...3");        
 
-        await delay(10000);
+        await delay(15000);
         console.log("Logging in...4");        
 
 
@@ -74,7 +74,7 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         await page.click("li[ptooltip='Courses']");
         console.log("Logging in...5");        
 
-        await delay(5000);
+        await delay(15000);
         console.log("Logging in...6");
         // await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
         // const screenshotBuffer = await page.screenshot({ fullPage: true });
