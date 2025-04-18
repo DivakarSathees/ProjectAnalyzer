@@ -76,7 +76,6 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
 
         await delay(15000);
         console.log("Logging in...6");
-        await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
         // const screenshotBuffer = await page.screenshot({ fullPage: true });
         // console.log("Base64 Screenshot:\n", screenshotBuffer.toString('base64'));
         
@@ -154,7 +153,9 @@ async function loginAndGetLocalStorage(url, USEREMAIL, PASSWORD, COURSE, MODULE,
         if (!courseClicked) console.log("❌ Course not found or click failed.");
         else console.log("✅ Course clicked.");
 
-        await delay(5000);
+
+        await delay(15000);
+        await page.screenshot({ path: 'screenshot_course_search.png', fullPage: true });
 
         const moduleClicked = await page.evaluate((moduleIndex) => {
             const xpath = `//*[@id="ui-tabpanel-3"]/div/div/div[1]/div[3]/div[${moduleIndex}]`;
