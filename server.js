@@ -282,24 +282,32 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     try {
     // Make the POST request to the API
     // const apiResponse = await axios.post("http://localhost:3000/visit", formData, {
-    // const apiResponse = await axios.post(process.env.BACKEND_TESTID_URL, formData, {
-    //   headers: {
-    //     headers: formData.getHeaders(), // Use formData.getHeaders() from the form-data package
-    //   },
-    // });
+    const apiResponse = await axios.post(process.env.BACKEND_TESTID_URL, formData, {
+      headers: {
+        headers: formData.getHeaders(), // Use formData.getHeaders() from the form-data package
+      },
+    });
+    // console.log("API Response:", apiResponse.data);
+    
     // testIds = apiResponse.data; 
-    const { testIds: ids, token: extractedToken } = await extractTestID(
-      filePath,
-      LOGIN_URL,
-      USEREMAIL,
-      PASSWORD,
-      COURSE,
-      MODULE,
-      TESTNAME
-    );
+    const { testIds: ids, token: extractedToken } = apiResponse.data;
+    // const { testIds: ids, token: extractedToken } = await extractTestID(
+    //   filePath,
+    //   LOGIN_URL,
+    //   USEREMAIL,
+    //   PASSWORD,
+    //   COURSE,
+    //   MODULE,
+    //   TESTNAME
+    // );
 
+    // testIds = ids;
+    // token = token || extractedToken;
     testIds = ids;
-    token = token || extractedToken;
+    token = extractedToken || token;
+    console.log("Test IDs:", testIds);
+  
+    
     
     } catch (error) {
     console.error("Error making POST request to /visit API:", error.message);
