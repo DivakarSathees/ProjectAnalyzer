@@ -383,11 +383,11 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
       if (event.event_type.includes('test-submitted')) {
         responseString = event.event_data.answer;
       } else {
-        responseString = response.data.frozen_test_data[0].questions[0].student_questions.student_questions_events[0].event_data.answer;
+        responseString = response.data.frozen_test_data[i].questions[0].student_questions.student_questions_events[0].event_data.answer;
       }
     });
     
-    const testSubmitedTimeUTS = response.data.frozen_test_data[0].questions[0].student_questions.updatedAt;
+    const testSubmitedTimeUTS = response.data.frozen_test_data[i].questions[0].student_questions.updatedAt;
     const testSubmitedTimeIST = await ISTtimeconverter(testSubmitedTimeUTS);
 
     
