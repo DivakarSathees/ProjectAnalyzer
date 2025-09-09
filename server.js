@@ -362,12 +362,19 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
         },
       }
     );
-    const QuestionData = response.data.frozen_test_data[0].questions[0].question_data;
-    // console.log(response.data.frozen_test_data[0].questions[0].project_questions.boilerPlate.url);
-    // console.log(response.data.frozen_test_data[0].questions[0].student_questions.answer);
-    const responseString1 = response.data.frozen_test_data[0].questions[0].student_questions.answer;
-    // const responseString = response.data.frozen_test_data[0].questions[0].student_questions.student_questions_events[0].event_data.answer;
-    const answer = response.data.frozen_test_data[0].questions[0].student_questions.student_questions_events;
+
+    for (let i = 0; i < response.data.frozen_test_data.length; i++) {
+    const frozenItem = response.data.frozen_test_data[i];
+    const QuestionData = frozenItem.questions[0].question_data;
+    const responseString1 = frozenItem.questions[0].student_questions.answer;
+    const answer = frozenItem.questions[0].student_questions.student_questions_events;
+
+    // const QuestionData = response.data.frozen_test_data[0].questions[0].question_data;
+    // // console.log(response.data.frozen_test_data[0].questions[0].project_questions.boilerPlate.url);
+    // // console.log(response.data.frozen_test_data[0].questions[0].student_questions.answer);
+    // const responseString1 = response.data.frozen_test_data[0].questions[0].student_questions.answer;
+    // // const responseString = response.data.frozen_test_data[0].questions[0].student_questions.student_questions_events[0].event_data.answer;
+    // const answer = response.data.frozen_test_data[0].questions[0].student_questions.student_questions_events;
 
     let responseString = null;
 
@@ -375,6 +382,8 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     await answer.forEach(event => {
       if (event.event_type.includes('test-submitted')) {
         responseString = event.event_data.answer;
+      } else {
+        responseString = response.data.frozen_test_data[0].questions[0].student_questions.student_questions_events[0].event_data.answer;
       }
     });
     
@@ -387,7 +396,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     const extractKey = (responseString) => {
       try {
           const jsonObject = JSON.parse(responseString);
-          const jsonObject1 = JSON.parse(responseString1);        
+          const jsonObject1 = JSON.parse(responseString1);  
           const resultString = jsonObject.resultList.length > 0 ? jsonObject.resultList[0].result : jsonObject1.resultList[0].result;
           const keyMatch = resultString.match(/"key":"(.*?)"/);
           return keyMatch ? keyMatch[1] : null;
@@ -946,14 +955,15 @@ async function processTestCases(responseString) {
   };
   const rawName = response.data.users_domain.name;
   const formattedName = rawName.replace(/\$/g, " ");
-  if(ai == "No solution is fetched"){
+  // if(ai == "No solution is fetched"){
     testid1 = test.testId
-  }
+  // }
   responsesToExcel.push({
     Name: formattedName,
     Email: response.data.users_domain.email,
-    Secured_Mark: response.data.t_marks,
-    Total_Mark: response.data.t_total_marks,
+    Section_Name: response.data.frozen_test_data[i].name,
+    Secured_Mark: response.data.frozen_test_data[i].questions[0].student_questions.marks,
+    Total_Mark: response.data.frozen_test_data[i].questions[0].marks,
     Test_Submitted_Time: testSubmitedTimeIST.dateSubmitted,
     SonarAddedTime: sonarAddedDateIST?.dateSubmitted || null,
     Differnce_In_Submission: differenceInTimeSubmission,
@@ -970,6 +980,7 @@ async function processTestCases(responseString) {
     test_Id: testid1,
     name: formattedName,
     // token: authToken,
+    Section_Name: response.data.frozen_test_data[i].name,
     tcList: JSON.stringify(tcList, null, 2),
     QuestionData,
     codeComponents: codeData,
@@ -981,6 +992,7 @@ async function processTestCases(responseString) {
     log: failedTestcaseMessage,
     TestCode: testCodeData
   });
+}
 }
     // // res.status(200).send(responsesToExcel);
     // const worksheet = xlsx.utils.json_to_sheet(responsesToExcel);
