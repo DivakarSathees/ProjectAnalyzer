@@ -482,7 +482,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     const angfailedRegex = /FAILED-([\w_]+)\s*[\s\S]*?Error: (.*?)\s*$/gm;
     const junitpassedRegex = /Passed\s+(\S+)/g;
     const errorRegex = /ERROR.*/g;
-    const junitfailureRegex = /com.examly.springapp.(\w+)\.(\w+)\s+Time elapsed: (.+?) <<< (FAILURE|ERROR)!(.+?)(?=\.java)/sg;
+    const junitfailureRegex = /(\w+)\.(\w+)\.(\w+)(?:\.(\w+))?(?:\.(\w+))?\s+Time elapsed: (.+?) <<< (FAILURE|ERROR)!(.+?)(?=\.java)/sg;
     const puppeteerfailureRegex = /TESTCASE:([^:]+):failure/g;
     const puppeteersuccessRegex = /TESTCASE:([^:]+):success/g;
 
@@ -494,16 +494,29 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     
     const regex = /ERROR.*/g;
     const failedDetails = [];
-    let match1;
+    let match1;        
     
     while ((match1 = junitfailureRegex.exec(inputString)) !== null) {
       if(!match1.includes('Skipped')){
         failedDetails.push(match1[0].trim());
+        if(!match1[5] && match1[4]){
+          results.failed.push({
+            testName: match1[4],
+            errorMessage: match1[8].trim()
+          });
+        } else if(!match1[4] && !match1[5]){
+          results.failed.push({
+            testName: match1[3],
+            errorMessage: match1[8].trim()
+          });
+        }        
+        else{
         results.failed.push({
-          testName: match1[2],
-          errorMessage: match1[5].trim()
+          testName: match1[5],
+          errorMessage: match1[8].trim()
         });
       }
+    }
       
     }
 
