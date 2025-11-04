@@ -249,19 +249,25 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     let testIds = [];
     if(!COURSE){
 
-    // Read and parse the Excel file
     const filePath = req.file.path;
     const workbook = xlsx.readFile(filePath);
     const sheetName = workbook.SheetNames[0];
     const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-    // Process each row in the sheet
     testIds = sheetData.map((row) => {
       return {
         testId: row["Test ID"],
         url: row["URL"], // Assuming "URL" is a column name in the Excel sheet
       };
     });
+    // testIds = [
+    //   {
+    //     testId: "https://admin.ltimindtree.iamneo.ai/result?testId=U2FsdGVkX1%2B1VRj4uLCXzOtOJehrdadk9T3OlVwbQ3TCUKBl8REzy4ZNOseny1IWfhzmyqAXe6HLCrky80lUbmxVvVlPthDW0dAOWDDYMzMrZppBatWZQEReQXY59JqNYladNNWrGIo3f9Y20V2ePA%3D%3D", 
+    //     url: "https://examly.io/test-platform/test-start?testId=643f1b1e4f1c2a001f0e4c8a"
+    //   }
+    // ];
+
+
     // console.log("Test IDs:", testIds);
     
 
@@ -486,6 +492,10 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     const puppeteerfailureRegex = /TESTCASE:([^:]+):failure/g;
     const puppeteersuccessRegex = /TESTCASE:([^:]+):success/g;
 
+    // New: Java Selenium error logs
+    const seleniumErrorRegex = /org\.openqa\.selenium\.[\w.]+Exception: ([\s\S]+?)(?=Build info:)/g;
+    const testNameFromStackRegex = /at [\w.]+\.([\w\d_]+)\(.*?:\d+\)/g;
+
     const results = {
       passed: [],
       failed: [],
@@ -554,32 +564,22 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     });
   }
 
-  // while ((match = junitpassedRegex.exec(inputString)) !== null) {
-  //   if(!match[1].includes('Tests:')){
-  //     results.passed.push(match[1]);
-  //   }
-  // }
+  // 🧩 Selenium / Java error log extraction
+  const seleniumMatches = [...inputString.matchAll(seleniumErrorRegex)];
+  for (const sel of seleniumMatches) {
+    const fullMessage = sel[1].trim();
 
-  // console.log("match[0]");
+    // Try to infer test name from stack trace lines
+    const stackMatch = [...inputString.matchAll(testNameFromStackRegex)];
+    const testName = stackMatch.length ? stackMatch[stackMatch.length - 1][1] : "UnknownTest";
+
+    results.failed.push({
+      testName,
+      errorMessage: fullMessage.split("\n")[0].trim() // first line of error
+    });
+  }
+  console.log(JSON.stringify(results, null, 2));
   
-  // while ((match = failureRegex.exec(inputString)) !== null) {
-  //   console.log("match[0]");
-  //   console.log(match[0]);
-  //   if(!match[1].includes('Skipped:')){
-  //     results.logs.push({
-  //       testCase: match[1].trim(), // Test case name
-  //       reason: match[4].trim()   // Failure reason
-  //     });
-  //   }
-  // }
-
-  // while ((match = junitfailedRegex.exec(inputString)) !== null) {
-  //   results.failed.push({
-  //       testName: match[1],
-  //   });
-  // }
-
-    // Output the results
     return JSON.stringify(results, null, 2);
   }
 
@@ -590,6 +590,8 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
 const extractResultList = async (responseString) => {
   try {
     const jsonObject = JSON.parse(responseString); // Parse the response string
+    // console.log("jsonObject " + jsonObject);
+    
     const hasCompilationError = jsonObject.tc_list.some(tc => tc.result === 'Compilation Error');
   
     let allResultLogs = []; // Collect all result logs from all items
