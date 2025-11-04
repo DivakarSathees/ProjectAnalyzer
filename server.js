@@ -493,7 +493,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     const puppeteersuccessRegex = /TESTCASE:([^:]+):success/g;
 
     // New: Java Selenium error logs
-    const seleniumErrorRegex = /org\.openqa\.selenium\.[\w.]+Exception: ([\s\S]+?)(?=Build info:)/g;
+    const seleniumErrorRegex = /(org\.openqa\.selenium\.[\w.]+Exception:[\s\S]+?)(?=Build info:)/g;
     const testNameFromStackRegex = /at [\w.]+\.([\w\d_]+)\(.*?:\d+\)/g;
 
     const results = {
@@ -564,20 +564,21 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     });
   }
 
-  // 🧩 Selenium / Java error log extraction
+  // 🧩 Selenium / Java error log extraction (includes full exception line)
   const seleniumMatches = [...inputString.matchAll(seleniumErrorRegex)];
   for (const sel of seleniumMatches) {
-    const fullMessage = sel[1].trim();
+    const fullError = sel[1].trim();
 
-    // Try to infer test name from stack trace lines
+    // Try to infer test name from stack trace
     const stackMatch = [...inputString.matchAll(testNameFromStackRegex)];
     const testName = stackMatch.length ? stackMatch[stackMatch.length - 1][1] : "UnknownTest";
 
     results.failed.push({
       testName,
-      errorMessage: fullMessage.split("\n")[0].trim() // first line of error
+      errorMessage: fullError.split("\n")[0].trim() // the main exception line
     });
   }
+
   console.log(JSON.stringify(results, null, 2));
   
     return JSON.stringify(results, null, 2);
