@@ -262,7 +262,11 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     });
     // testIds = [
     //   {
-    //     testId: "https://admin.ltimindtree.iamneo.ai/result?testId=U2FsdGVkX1%2B1VRj4uLCXzOtOJehrdadk9T3OlVwbQ3TCUKBl8REzy4ZNOseny1IWfhzmyqAXe6HLCrky80lUbmxVvVlPthDW0dAOWDDYMzMrZppBatWZQEReQXY59JqNYladNNWrGIo3f9Y20V2ePA%3D%3D", 
+    //     testId: "https://admin.eiphexaware.examly.io/result?testId=U2FsdGVkX1%2BVl3ynmaj%2BJ9YwP2SUXCU7iGkhUQtnXTKkYz5hSX%2Bb%2BcgJO2UH6CduD%2BdprBAekNO9%2BYO2JsrvFc6zH0NvippKi5oHLhCYf%2FcbugBD3%2FPTv%2BqUoi1lZDoM6610DFxqcaGA3xrCpSkZag%3D%3D", 
+    //     url: "https://examly.io/test-platform/test-start?testId=643f1b1e4f1c2a001f0e4c8a"
+    //   },
+    //   {
+    //     testId: "https://admin.eiphexaware.examly.io/result?testId=U2FsdGVkX19UGKBqMO4Hz0OJNLT3y0bu0yqTGgkZ0mOKZ%2BEs3EXVQBUnHvhp5LOsxak2cgCQyvgi98WKzsaSUf%2FSySG6xn6OLfk7iTDX0VNMplGzdhYePxNE5c18Q94Dux3ijXLK18hHfqQYRp5CNw%3D%3D", 
     //     url: "https://examly.io/test-platform/test-start?testId=643f1b1e4f1c2a001f0e4c8a"
     //   }
     // ];
@@ -373,7 +377,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     const frozenItem = response.data.frozen_test_data[i];
     const QuestionData = frozenItem.questions[0].question_data;
     const responseString1 = frozenItem.questions[0].student_questions.answer;
-    const answer = frozenItem.questions[0].student_questions.student_questions_events;
+    const answer = frozenItem.questions[0].student_questions.student_questions_events || frozenItem.questions[0].student_questions.l_event_data;
 
     // const QuestionData = response.data.frozen_test_data[0].questions[0].question_data;
     // // console.log(response.data.frozen_test_data[0].questions[0].project_questions.boilerPlate.url);
@@ -385,6 +389,11 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     let responseString = null;
 
     // Find the event where event_data is "test_submited" and get its answer
+    if(answer.student_questions_events === undefined){
+      responseString = responseString1;
+    } else{
+
+
     await answer.forEach(event => {
       if (event.event_type.includes('test-submitted')) {
         responseString = event.event_data.answer;
@@ -392,6 +401,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
         responseString = response.data.frozen_test_data[i].questions[0].student_questions.student_questions_events[0].event_data.answer;
       }
     });
+  }
     
     const testSubmitedTimeUTS = response.data.frozen_test_data[i].questions[0].student_questions.updatedAt;
     const testSubmitedTimeIST = await ISTtimeconverter(testSubmitedTimeUTS);
@@ -496,6 +506,14 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     const seleniumErrorRegex = /(org\.openqa\.selenium\.[\w.]+Exception:[\s\S]+?)(?=Build info:)/g;
     const testNameFromStackRegex = /at [\w.]+\.([\w\d_]+)\(.*?:\d+\)/g;
 
+    const pytestPassedRegex = /([\w\/.-]+)::([\w_]+)\s+PASSED/g;
+    // const pytestFailedRegex = /([\w\/.-]+)::([\w_]+)\s+FAILED[\s\S]*?(?=={10,}|$)/g;
+    const pytestFailedRegex =  /FAILURES\s+=+\s+([\s\S]*?)(?=^={10,}|^_{10,}|^=====|\Z)/gm;
+    const pytestErrorRegex = /([\w\/.-]+)::([\w_]+)\s+ERROR[\s\S]*?(?=={10,}|$)/g;
+
+    // Main error line extract
+    const pythonErrorLineRegex = /^E\s+(.*)$/m;
+
     const results = {
       passed: [],
       failed: [],
@@ -579,7 +597,146 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     });
   }
 
-  console.log(JSON.stringify(results, null, 2));
+
+    // --------------------- PASSED ---------------------
+    while ((match = pytestPassedRegex.exec(inputString)) !== null) {
+      results.passed.push(match[2]); // test name
+    }
+
+    // --------------------- FAILED ---------------------
+    // Improved pytest failure extraction with detailed error messages
+    const pytestDetailedFailureRegex = /_{2,}(.*?test[\w_]*)\s*_{2,}([\s\S]*?)(?=_{2,}|$)/gi;
+    let detailedMatch;
+    
+    while ((detailedMatch = pytestDetailedFailureRegex.exec(inputString)) !== null) {
+      const testName = detailedMatch[1].trim();
+      const failureBlock = detailedMatch[2];
+      const errorMessages = [];
+      
+      // Extract all E lines (error lines in pytest)
+      const eLineMatches = failureBlock.match(/^\s*E\s+(.+)$/gm);
+      if (eLineMatches) {
+        eLineMatches.forEach(line => {
+          errorMessages.push(line.replace(/^\s*E\s+/, '').trim());
+        });
+      }
+      
+      // If no E lines, try to extract assertion or failure messages
+      if (errorMessages.length === 0) {
+        const failedMatch = failureBlock.match(/^(.*?Failed:.*?)$/gm);
+        const assertionMatch = failureBlock.match(/^(.*?AssertionError.*?)$/gm);
+        const exceptionMatch = failureBlock.match(/^(.*?Exception.*?)$/gm);
+        
+        if (failedMatch) {
+          errorMessages.push(...failedMatch.map(m => m.trim()));
+        } else if (assertionMatch) {
+          errorMessages.push(...assertionMatch.map(m => m.trim()));
+        } else if (exceptionMatch) {
+          errorMessages.push(...exceptionMatch.map(m => m.trim()));
+        }
+      }
+      
+      // If still no errors found, get the last meaningful line
+      if (errorMessages.length === 0) {
+        const lines = failureBlock.split('\n').filter(line => line.trim());
+        if (lines.length > 0) {
+          errorMessages.push(lines[lines.length - 1].trim());
+        }
+      }
+      
+      results.failed.push({
+        testName,
+        errorMessages: errorMessages.length > 0 ? errorMessages : ['Unknown error']
+      });
+    }
+
+
+    // --------------------- ERRORS ---------------------
+    // Extract errors with detailed information
+    const pytestErrorDetailRegex = /_{2,}ERROR at (.*?) of ([\w_]+)_{2,}([\s\S]*?)(?=_{2,}|$)/gi;
+    let errorMatch;
+    
+    while ((errorMatch = pytestErrorDetailRegex.exec(inputString)) !== null) {
+      const errorPhase = errorMatch[1].trim(); // e.g., "teardown"
+      const testName = errorMatch[2].trim();
+      const errorBlock = errorMatch[3];
+      const errorMessages = [];
+      
+      // Extract AttributeError, Exception, or other error types
+      const attrErrorMatch = errorBlock.match(/AttributeError:\s*(.+?)(?=\n|$)/);
+      const exceptionMatch = errorBlock.match(/(\w+Error):\s*(.+?)(?=\n|$)/);
+      const eLineMatch = errorBlock.match(/^\s*E\s+(.+)$/gm);
+      
+      if (attrErrorMatch) {
+        errorMessages.push(`AttributeError: ${attrErrorMatch[1].trim()}`);
+      } else if (exceptionMatch) {
+        errorMessages.push(`${exceptionMatch[1]}: ${exceptionMatch[2].trim()}`);
+      } else if (eLineMatch) {
+        eLineMatch.forEach(line => {
+          errorMessages.push(line.replace(/^\s*E\s+/, '').trim());
+        });
+      }
+      
+      results.failed.push({
+        testName,
+        errorPhase,
+        errorMessages: errorMessages.length > 0 ? errorMessages : ['Unknown error']
+      });
+    }
+
+    // --------------------- COLLECTION ERRORS ---------------------
+    // Handle pytest collection errors (ImportError, ModuleNotFoundError, etc.)
+    const collectionErrorRegex = /ERROR collecting ([\w.]+)([\s\S]*?)(?===|!!!|$)/gi;
+    let collectionErrorMatch;
+    
+    while ((collectionErrorMatch = collectionErrorRegex.exec(inputString)) !== null) {
+      const fileName = collectionErrorMatch[1].trim();
+      const errorBlock = collectionErrorMatch[2];
+      const errorMessages = [];
+      
+      // Extract all E lines (error lines with E prefix)
+      const eLineMatches = errorBlock.match(/^\s*E\s+(.+)$/gm);
+      if (eLineMatches) {
+        eLineMatches.forEach(line => {
+          errorMessages.push(line.replace(/^\s*E\s+/, '').trim());
+        });
+      }
+      
+      // If no E lines, try to extract common error types
+      if (errorMessages.length === 0) {
+        // Extract ModuleNotFoundError, ImportError, etc.
+        const moduleErrorMatch = errorBlock.match(/(\w+Error):\s*(.+?)(?=\n|$)/g);
+        if (moduleErrorMatch) {
+          moduleErrorMatch.forEach(match => {
+            errorMessages.push(match.trim());
+          });
+        }
+      }
+      
+      // If still no errors, extract traceback hints
+      if (errorMessages.length === 0) {
+        const hintMatch = errorBlock.match(/Hint:\s*(.+?)(?=\n|$)/);
+        if (hintMatch) {
+          errorMessages.push(`Hint: ${hintMatch[1].trim()}`);
+        }
+      }
+      
+      // Extract the last meaningful line if all else fails
+      if (errorMessages.length === 0) {
+        const lines = errorBlock.split('\n').filter(line => line.trim() && !line.includes('='));
+        if (lines.length > 0) {
+          errorMessages.push(lines[lines.length - 1].trim());
+        }
+      }
+      
+      results.failed.push({
+        testName: `Collection Error - ${fileName}`,
+        errorPhase: 'collection',
+        errorMessages: errorMessages.length > 0 ? errorMessages : ['Unknown collection error']
+    });
+  }
+
+  // console.log(JSON.stringify(results, null, 2));
   
     return JSON.stringify(results, null, 2);
   }
