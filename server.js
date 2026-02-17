@@ -53,7 +53,7 @@ async function TestCodeSplitter(element, keyString, testCodeData) {
     console.log(`Skipping directory: ${element.name}`);
     return null;
   }
-  const url = `https://sonar.server.examly.io//api/sources/lines?key=iamneo-production-2_${keyString}%3A${element.path}&from=1&to=502`;
+  const url = `https://sonar.server.examly.io/api/sources/lines?key=iamneo-production-2_${keyString}%3A${element.path}&from=1&to=502`;
 
   const response = await axios.get(url);
 
@@ -114,7 +114,7 @@ async function CodeSplitter(element, keyString ) {
   //   return null;
   // }
   
-  const url = `https://sonar.server.examly.io//api/sources/lines?key=iamneo-production-2_${keyString}%3A${element.path}&from=1&to=502`;
+  const url = `https://sonar.server.examly.io/api/sources/lines?key=iamneo-production-2_${keyString}%3A${element.path}&from=1&to=502`;
 
   const response = await axios.get(url);
 
@@ -182,7 +182,7 @@ async function DirHandler(element, keyString, testCodeData) {
 
   
 
-  const dirUrl = `https://sonar.server.examly.io//api/measures/component_tree?ps=100&s=qualifier%2Cname&component=iamneo-production-2_${keyString}%3A${element.path}&metricKeys=ncloc%2Cvulnerabilities%2Cbugs%2Ccode_smells%2Csecurity_hotspots%2Ccoverage%2Cduplicated_lines_density&strategy=children`;
+  const dirUrl = `https://sonar.server.examly.io/api/measures/component_tree?ps=100&s=qualifier%2Cname&component=iamneo-production-2_${keyString}%3A${element.path}&metricKeys=ncloc%2Cvulnerabilities%2Cbugs%2Ccode_smells%2Csecurity_hotspots%2Ccoverage%2Cduplicated_lines_density&strategy=children`;
   const dirResponse = await axios.get(dirUrl);
 
   if (!dirResponse.data.components) {
@@ -1007,16 +1007,16 @@ async function processTestCases(responseString) {
   
   let sonarAddedDateIST;
   // const sonarAddedDate = await axios.get(
-  //   `https://sonar.server.examly.io//api/project_branches/list?project=iamneo-production-2_${key}`);
+  //   `https://sonar.server.examly.io/api/project_branches/list?project=iamneo-production-2_${key}`);
 
-    // const sonarAddedDate = await axios.get(`https://sonar.server.examly.io//api/project_branches/list?project=iamneo-production-2_${key}`, {
+    // const sonarAddedDate = await axios.get(`https://sonar.server.examly.io/api/project_branches/list?project=iamneo-production-2_${key}`, {
     //   validateStatus: (status) => status === 200 || status === 404,
     // });
     let differenceInTimeSubmission;
 
     try {
       const sonarAddedDate = await axios.get(
-          `https://sonar.server.examly.io//api/project_branches/list?project=iamneo-production-2_${key}`,
+          `https://sonar.server.examly.io/api/project_branches/list?project=iamneo-production-2_${key}`,
           { validateStatus: (status) => status === 200 || status === 404 }
       );
       console.log("Sonar response:", sonarAddedDate.data);
@@ -1326,7 +1326,7 @@ const getCode = async (keyString, testCodeData) => {
   try {
     console.log(keyString);
     
-    const files = `https://sonar.server.examly.io//api/measures/component_tree?ps=100&s=qualifier%2Cname&component=iamneo-production-2_${keyString}&metricKeys=ncloc%2Cvulnerabilities%2Cbugs%2Ccode_smells%2Csecurity_hotspots%2Ccoverage%2Cduplicated_lines_density&strategy=children`;
+    const files = `https://sonar.server.examly.io/api/measures/component_tree?ps=100&s=qualifier%2Cname&component=iamneo-production-2_${keyString}&metricKeys=ncloc%2Cvulnerabilities%2Cbugs%2Ccode_smells%2Csecurity_hotspots%2Ccoverage%2Cduplicated_lines_density&strategy=children`;
     // const filesResponse = await axios.get(files);
     const filesResponse = await axios.get(files, {
       validateStatus: (status) => status === 200 || status === 404,
@@ -1408,6 +1408,7 @@ app.get('/screenshot', (req, res) => {
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);
 });
+
 
 
 
