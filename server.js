@@ -604,29 +604,48 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     }
 
     // --------------------- FAILED ---------------------
-    // Improved pytest failure extraction with detailed error messages
-    const pytestDetailedFailureRegex = /_{2,}(.*?test[\w_]*)\s*_{2,}([\s\S]*?)(?=_{2,}|$)/gi;
-    let detailedMatch;
-    
-    while ((detailedMatch = pytestDetailedFailureRegex.exec(inputString)) !== null) {
-      const testName = detailedMatch[1].trim();
-      const failureBlock = detailedMatch[2];
+    // Improved pytest failure extraction with detailed error messages.
+    //
+    // A pytest failure header is an ENTIRE line shaped like:
+    //   ________________ test_name ________________
+    // We anchor the match to the whole line (^...$ with the `m` flag) and require a
+    // long run of underscores. This avoids two false delimiters that broke the old
+    // `_{2,}`-based approach:
+    //   1. Double-underscores inside tracebacks (e.g. `__init__.py`), which used to
+    //      truncate the block before the real `E   ...` error line was reached.
+    //   2. The spaced `_ _ _ _ _` separator lines pytest prints inside a traceback.
+    const failureHeaderRegex = /^_{4,} (.+?) _{4,}\s*$/gm;
+    const failureHeaders = [...inputString.matchAll(failureHeaderRegex)]
+      // Skip "ERROR at <phase> of <test>" headers — handled by the ERROR section below.
+      .filter(h => !/^ERROR\b/i.test(h[1].trim()));
+
+    for (let i = 0; i < failureHeaders.length; i++) {
+      const header = failureHeaders[i];
+      const testName = header[1].trim();
+
+      // The block is everything between this header and the next failure/error header.
+      const blockStart = header.index + header[0].length;
+      const blockEnd = i + 1 < failureHeaders.length
+        ? failureHeaders[i + 1].index
+        : inputString.length;
+      const failureBlock = inputString.slice(blockStart, blockEnd);
+
       const errorMessages = [];
-      
-      // Extract all E lines (error lines in pytest)
+
+      // Extract all E lines (error lines in pytest), e.g. `E   NameError: name 'train' is not defined`
       const eLineMatches = failureBlock.match(/^\s*E\s+(.+)$/gm);
       if (eLineMatches) {
         eLineMatches.forEach(line => {
           errorMessages.push(line.replace(/^\s*E\s+/, '').trim());
         });
       }
-      
+
       // If no E lines, try to extract assertion or failure messages
       if (errorMessages.length === 0) {
         const failedMatch = failureBlock.match(/^(.*?Failed:.*?)$/gm);
         const assertionMatch = failureBlock.match(/^(.*?AssertionError.*?)$/gm);
         const exceptionMatch = failureBlock.match(/^(.*?Exception.*?)$/gm);
-        
+
         if (failedMatch) {
           errorMessages.push(...failedMatch.map(m => m.trim()));
         } else if (assertionMatch) {
@@ -635,7 +654,7 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
           errorMessages.push(...exceptionMatch.map(m => m.trim()));
         }
       }
-      
+
       // If still no errors found, get the last meaningful line
       if (errorMessages.length === 0) {
         const lines = failureBlock.split('\n').filter(line => line.trim());
@@ -643,10 +662,32 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
           errorMessages.push(lines[lines.length - 1].trim());
         }
       }
-      
+
       results.failed.push({
         testName,
         errorMessages: errorMessages.length > 0 ? errorMessages : ['Unknown error']
+      });
+    }
+
+    // --------------------- FAILED (summary fallback) ---------------------
+    // pytest's "short test summary info" section lists every failure authoritatively as:
+    //   FAILED tests.py::test_name - NameError: name 'train' is not defined
+    // Use it to backfill any failure the detailed blocks above missed (e.g. when a
+    // failure header was truncated). We match on the full `file::test` id to avoid dupes.
+    const seenFailures = new Set(results.failed.map(f => f.testName));
+    const summaryFailedRegex = /^FAILED\s+([^\s]+?)\s*(?:-\s*(.+))?$/gm;
+    let summaryMatch;
+    while ((summaryMatch = summaryFailedRegex.exec(inputString)) !== null) {
+      const fullId = summaryMatch[1].trim();              // e.g. tests.py::test_init_stores_text
+      const shortName = fullId.split('::').pop().trim();  // e.g. test_init_stores_text
+      const summaryError = summaryMatch[2] ? summaryMatch[2].trim() : 'Unknown error';
+
+      if (seenFailures.has(fullId) || seenFailures.has(shortName)) continue;
+      seenFailures.add(shortName);
+
+      results.failed.push({
+        testName: shortName,
+        errorMessages: [summaryError]
       });
     }
 
