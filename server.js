@@ -669,13 +669,17 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
       });
     }
 
-    // --------------------- FAILED (summary fallback) ---------------------
-    // pytest's "short test summary info" section lists every failure authoritatively as:
+    // --------------------- FAILED / ERROR (summary fallback) ---------------------
+    // pytest's "short test summary info" section lists every failure/error authoritatively as:
     //   FAILED tests.py::test_name - NameError: name 'train' is not defined
+    //   ERROR  tests.py::test_name - NameError: name 'orders' is not defined
+    // (`ERROR` here is a setup/fixture/import error tied to a specific test.)
     // Use it to backfill any failure the detailed blocks above missed (e.g. when a
-    // failure header was truncated). We match on the full `file::test` id to avoid dupes.
+    // header was truncated, or only a summary line is present). The required `::`
+    // ensures we don't swallow `ERROR collecting <file>` or `ERROR at <phase> of <test>`
+    // lines, which are handled by the dedicated sections below. Dedupe on the test id.
     const seenFailures = new Set(results.failed.map(f => f.testName));
-    const summaryFailedRegex = /^FAILED\s+([^\s]+?)\s*(?:-\s*(.+))?$/gm;
+    const summaryFailedRegex = /^(?:FAILED|ERROR)\s+(\S+::\S+?)\s*(?:-\s*(.+))?$/gm;
     let summaryMatch;
     while ((summaryMatch = summaryFailedRegex.exec(inputString)) !== null) {
       const fullId = summaryMatch[1].trim();              // e.g. tests.py::test_init_stores_text
