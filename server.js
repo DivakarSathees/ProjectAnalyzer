@@ -4,6 +4,7 @@ const port = 8081;
 const axios = require("axios");
 const he = require("he");
 const { aianalyzer } = require('./aianalyzer');
+const aiConfig = require('./aiConfig');
 const { puplocalstorage } = require('./puplocalstorage');
 const { extractTestID } = require('./extractTestID');
 const multer = require("multer");
@@ -1448,6 +1449,69 @@ app.delete('/delete-all-files', async (req, res) => {
 
 app.get('/screenshot', (req, res) => {
   res.sendFile(__dirname + '/screenshot_course_search.png');
+});
+
+// ===================== AI MODEL / API KEY CONFIG =====================
+// The app itself stays fully open. Anyone may view and switch the AI model.
+// Only an authenticated caller may change the API key.
+
+// Auth gate for protected config actions. A caller is "authenticated" if it
+// presents the shared admin secret (set as ADMIN_SECRET in the environment),
+// via either `Authorization: Bearer <secret>` or an `x-admin-token` header.
+function requireAuth(req, res, next) {
+  const expected = process.env.ADMIN_SECRET;
+  if (!expected) {
+    return res.status(500).json({ error: 'Server auth is not configured (ADMIN_SECRET is missing).' });
+  }
+  const authHeader = req.headers['authorization'] || '';
+  const token = authHeader.startsWith('Bearer ')
+    ? authHeader.slice(7).trim()
+    : (req.headers['x-admin-token'] || '').trim();
+
+  if (token && token === expected) {
+    return next();
+  }
+  return res.status(401).json({ error: 'Unauthorized: a valid admin token is required to change the API key.' });
+}
+
+// List selectable models + the one currently active (open to everyone).
+app.get('/ai-config/models', (req, res) => {
+  res.json({ models: aiConfig.AVAILABLE_MODELS, current: aiConfig.getModel() });
+});
+
+// Current AI config (open to everyone). The API key value is never exposed —
+// only whether one is configured.
+app.get('/ai-config', (req, res) => {
+  res.json({ model: aiConfig.getModel(), apiKeyConfigured: aiConfig.hasApiKey() });
+});
+
+// Change the active model (open to everyone).
+app.post('/ai-config/model', (req, res) => {
+  const { model } = req.body || {};
+  if (!model) {
+    return res.status(400).json({ error: 'model is required' });
+  }
+  if (!aiConfig.isValidModel(model)) {
+    return res.status(400).json({
+      error: `Unsupported model "${model}". Allowed: ${aiConfig.AVAILABLE_MODELS.join(', ')}`,
+    });
+  }
+  res.json({ message: 'Model updated', model: aiConfig.setModel(model) });
+});
+
+// Change the API key (authenticated only). The new key is held in memory and
+// the Groq client is rebuilt with it immediately.
+app.post('/ai-config/api-key', requireAuth, (req, res) => {
+  const { apiKey } = req.body || {};
+  if (!apiKey) {
+    return res.status(400).json({ error: 'apiKey is required' });
+  }
+  try {
+    aiConfig.setApiKey(apiKey);
+    res.json({ message: 'API key updated' });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 app.listen(port, () => {

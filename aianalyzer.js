@@ -9,11 +9,9 @@ function getTokenCount(input) {
     return encoded.length; // Return the token count
 }
 
-const Groq = require("groq-sdk");
-
-const grop = new Groq({
-    apiKey: process.env.GROQ_API_KEY,
-});
+// The Groq client and the active model are managed centrally so they can be
+// changed at runtime via the /ai-config endpoints.
+const aiConfig = require('./aiConfig');
 exports.aianalyzer = async (data, analysisType) => {
     // console.log(data.codeComponents);
     // let prompt = data.codeComponents.map(obj => JSON.stringify(obj, null, 2)).join('\n'); 
@@ -121,12 +119,9 @@ exports.aianalyzer = async (data, analysisType) => {
         }
         
         
-        // Call OpenAI GPT-3 or GPT-4 API with the generated prompt
-        const response = await grop.chat.completions.create({
-            // model: 'llama3-8b-8192', 
-            model: 'llama-3.3-70b-versatile', 
-            // model: 'meta-llama/llama-4-scout-17b-16e-instruct', 
-            // model: 'gemma2-9b-it',  // or 'gpt-4' if using GPT-4
+        // Call the Groq API with the currently selected client + model.
+        const response = await aiConfig.getClient().chat.completions.create({
+            model: aiConfig.getModel(),
             // prompt: prompt,
             messages: [
                         { role: "system", content: "You are Code analyzer, need to check line by line of the provided solution based on description & log for any syntax wise error, logical implementation error, funtionality wise error, runntime error, compile time error. etc" },
