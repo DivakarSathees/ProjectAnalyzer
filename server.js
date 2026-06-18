@@ -251,16 +251,38 @@ app.post("/get-analysis", upload.single("file"), async (req, res) => {
     if(!COURSE){
 
     const filePath = req.file.path;
-    const workbook = xlsx.readFile(filePath);
-    const sheetName = workbook.SheetNames[0];
-    const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
 
-    testIds = sheetData.map((row) => {
-      return {
-        testId: row["Test ID"],
-        url: row["URL"], // Assuming "URL" is a column name in the Excel sheet
-      };
+    // Normalize a single record to { testId, url }, accepting either the
+    // Excel column names ("Test ID" / "URL") or JSON-style keys (testId / url).
+    const toTestId = (row) => ({
+      testId: row["Test ID"] ?? row.testId ?? row.testID ?? row.TestId,
+      url: row["URL"] ?? row.url ?? row.Url,
     });
+
+    // Accept either a JSON file or an Excel sheet. Detect by extension (falling
+    // back to mimetype) so callers can upload whichever format they have.
+    const originalName = (req.file.originalname || "").toLowerCase();
+    const isJson =
+      originalName.endsWith(".json") ||
+      req.file.mimetype === "application/json";
+
+    if (isJson) {
+      const parsed = JSON.parse(fs.readFileSync(filePath, "utf8"));
+      // Support a bare array or a { testIds: [...] } wrapper.
+      const rows = Array.isArray(parsed) ? parsed : parsed.testIds;
+      if (!Array.isArray(rows)) {
+        fs.unlinkSync(filePath);
+        return res.status(400).send({
+          error: "JSON must be an array of records or an object with a 'testIds' array.",
+        });
+      }
+      testIds = rows.map(toTestId);
+    } else {
+      const workbook = xlsx.readFile(filePath);
+      const sheetName = workbook.SheetNames[0];
+      const sheetData = xlsx.utils.sheet_to_json(workbook.Sheets[sheetName]);
+      testIds = sheetData.map(toTestId);
+    }
     // testIds = [
     //   {
     //     testId: "https://admin.eiphexaware.examly.io/result?testId=U2FsdGVkX1%2BVl3ynmaj%2BJ9YwP2SUXCU7iGkhUQtnXTKkYz5hSX%2Bb%2BcgJO2UH6CduD%2BdprBAekNO9%2BYO2JsrvFc6zH0NvippKi5oHLhCYf%2FcbugBD3%2FPTv%2BqUoi1lZDoM6610DFxqcaGA3xrCpSkZag%3D%3D", 
